@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เว็บทบทวนคำศัพท์อัจฉริยะ (พร้อมระบบเสียง)</title>
+    <!-- ใช้ Bootstrap 5 และ ไอคอน -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body { background-color: #f0f2f5; }
+        .container { max-width: 700px; }
+        .card { border: none; border-radius: 0.75rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+        .nav-pills .nav-link { border-radius: 0.5rem; }
+        .nav-pills .nav-link.active { background-color: #0d6efd; }
+        #alert-container { position: fixed; top: 1rem; right: 1rem; z-index: 1050; min-width: 250px; }
+        .mic-listening {
+            color: #fff;
+            background-color: #dc3545;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container my-4">
+        <div class="card p-3 mb-4">
+            <h1 class="text-center text-primary">เว็บทบทวนคำศัพท์อัจฉริยะ</h1>
+            <p class="text-center text-muted">ระบบจะเลือกคำที่ควรทบทวนให้คุณโดยอัตโนมัติ</p>
+            <ul class="nav nav-pills nav-fill" id="main-nav">
+                <li class="nav-item"><a class="nav-link active" href="#" data-page="test"><i class="bi bi-robot"></i> เริ่มทบทวน</a></li>
+                <li class="nav-item"><a class="nav-link" href="#" data-page="manage"><i class="bi bi-gear-fill"></i> จัดการข้อมูล</a></li>
+            </ul>
+        </div>
+
+        <div id="page-content"></div>
+
+        <!-- Template หน้าทำแบบทดสอบ -->
+        <template id="template-test">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h3><i class="bi bi-patch-question-fill"></i> รอบทบทวนวันนี้</h3>
+                    <div id="session-stats">
+                        <span id="due-count-badge" class="badge bg-light text-dark" title="คำถามในกองหลัก"></span>
+                        <span id="review-pile-badge" class="badge bg-warning text-dark" title="คำถามที่ต้องทวนซ้ำ"></span>
+                    </div>
+                </div>
+                <div class="card-body text-center" id="quiz-area"></div>
+            </div>
+        </template>
+
+        <!-- Template หน้าจัดการข้อมูล -->
+        <template id="template-manage">
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white"><h5><i class="bi bi-plus-circle-fill"></i> เพิ่มคำศัพท์ใหม่</h5></div>
+                <div class="card-body">
+                    <form id="add-form">
+                        <div class="mb-3"><label for="new-question" class="form-label">คำศัพท์ภาษาอังกฤษ</label><input type="text" id="new-question" class="form-control" required></div>
+                        <div class="mb-3"><label for="new-answer" class="form-label">คำแปลภาษาไทย</label><input type="text" id="new-answer" class="form-control" required></div>
+                        <button type="submit" class="btn btn-success w-100">เพิ่มคำศัพท์</button>
+                    </form>
+                </div>
+            </div>
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white"><h5><i class="bi bi-file-earmark-spreadsheet-fill"></i> ส่งออกและรีเซ็ต</h5></div>
+                <div class="card-body">
+                    <p>ส่งออกประวัติการตอบทั้งหมดเป็นไฟล์ CSV</p>
+                    <button id="export-results-btn" class="btn btn-primary w-100 mb-3">ส่งออกผลลัพธ์ (.csv)</button>
+                    <hr>
+                    <p>รีเซ็ตความคืบหน้าการทบทวนทั้งหมด (คำศัพท์จะไม่ถูกลบ)</p>
+                    <button id="reset-srs-btn" class="btn btn-danger w-100">รีเซ็ตความคืบหน้า</button>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header bg-secondary text-white"><h5><i class="bi bi-card-list"></i> คลังคำศัพท์ทั้งหมด</h5></div>
+                <div class="card-body"><div id="questions-list" class="table-responsive"></div></div>
+            </div>
+        </template>
+    </div>
+
+    <div id="alert-container"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const pageContent = document.getElementById('page-content');
+            const mainNav = document.getElementById('main-nav');
+
+            const SRS_LEVELS = [1, 3, 7, 14, 30, 60, 120];
+            
+            let QuizSession = {
+                dueQuestions: [],
+                reviewPile: [],
+                currentQuestion: null,
+                isSessionActive: false,
+            };
+
+            const Storage = {
+                getQuestions: () => {
+                    const data = localStorage.getItem('quizQuestions_srs');
+                    if (!data) {
+                        // --- *** อัปเดตข้อมูลเริ่มต้นตรงนี้ *** ---
+                        const initialQuestions = [
+                            // คำศัพท์พื้นฐาน
+                            { id: 1, question: 'apple', answer: 'แอปเปิ้ล' },
+                            { id: 2, question: 'banana', answer: 'กล้วย' },
+                            { id: 3, question: 'cat', answer: 'แมว' },
+                            { id: 4, question: 'dog', answer: 'สุนัข' },
+                            { id: 5, question: 'house', answer: 'บ้าน' },
+                            // คำศัพท์วิศวกรรมไฟฟ้า
+                            { id: 6, question: 'Voltage', answer: 'แรงดันไฟฟ้า' },
+                            { id: 7, question: 'Current', answer: 'กระแสไฟฟ้า' },
+                            { id: 8, question: 'Resistance', answer: 'ความต้านทาน' },
+                            { id: 9, question: 'Power', answer: 'กำลังไฟฟ้า' },
+                            { id: 10, question: 'Capacitor', answer: 'ตัวเก็บประจุ' },
+                            { id: 11, question: 'Inductor', answer: 'ตัวเหนี่ยวนำ' },
+                            { id: 12, question: 'Transformer', answer: 'หม้อแปลงไฟฟ้า' },
+                            { id: 13, question: 'Circuit Breaker', answer: 'เบรกเกอร์' },
+                            { id: 14, question: 'Diode', answer: 'ไดโอด' },
+                            { id: 15, question: 'Transistor', answer: 'ทรานซิสเตอร์' },
+                            { id: 16, question: 'Alternating Current', answer: 'ไฟฟ้ากระแสสลับ' },
+                            { id: 17, question: 'Direct Current', answer: 'ไฟฟ้ากระแสตรง' },
+                            { id: 18, question: 'Frequency', answer: 'ความถี่' },
+                            { id: 19, question: 'Ohm\'s Law', answer: 'กฎของโอห์ม' },
+                            { id: 20, question: 'Semiconductor', answer: 'สารกึ่งตัวนำ' },
+                            { id: 21, question: 'Ground', answer: 'สายดิน' },
+                            { id: 22, question: 'Relay', answer: 'รีเลย์' },
+                            { id: 23, question: 'Motor', answer: 'มอเตอร์' },
+                            { id: 24, question: 'Generator', answer: 'เครื่องกำเนิดไฟฟ้า' },
+                            { id: 25, question: 'Insulator', answer: 'ฉนวนไฟฟ้า' }
+                        ];
+                        // เพิ่ม srsLevel และ nextReviewDate ให้กับข้อมูลเริ่มต้น
+                        const processedQuestions = initialQuestions.map(q => ({
+                            ...q,
+                            srsLevel: 0,
+                            nextReviewDate: Date.now()
+                        }));
+                        localStorage.setItem('quizQuestions_srs', JSON.stringify(processedQuestions));
+                        return processedQuestions;
+                    }
+                    
+                    let questions = JSON.parse(data);
+                    let needsSave = false;
+                    questions.forEach(q => {
+                        if (q.srsLevel === undefined) {
+                            q.srsLevel = 0; q.nextReviewDate = Date.now(); needsSave = true;
+                        }
+                    });
+                    if (needsSave) Storage.saveQuestions(questions);
+                    return questions;
+                },
+                saveQuestions: (questions) => localStorage.setItem('quizQuestions_srs', JSON.stringify(questions)),
+                addQuestion: (question, answer) => {
+                    const questions = Storage.getQuestions();
+                    const newId = questions.length > 0 ? Math.max(...questions.map(q => q.id)) + 1 : 1;
+                    questions.push({ id: newId, question, answer, srsLevel: 0, nextReviewDate: Date.now() });
+                    Storage.saveQuestions(questions);
+                },
+                deleteQuestion: (id) => {
+                    let questions = Storage.getQuestions();
+                    questions = questions.filter(q => q.id !== id);
+                    Storage.saveQuestions(questions);
+                },
+                updateQuestionSRS: (id, isCorrect) => {
+                    const questions = Storage.getQuestions();
+                    const question = questions.find(q => q.id === id);
+                    if (!question) return;
+                    if (isCorrect) {
+                        question.srsLevel++;
+                    } else {
+                        question.srsLevel = 1;
+                    }
+                    const daysToAdd = SRS_LEVELS[Math.min(question.srsLevel, SRS_LEVELS.length - 1)] || 1;
+                    const now = new Date(); now.setHours(0, 0, 0, 0);
+                    question.nextReviewDate = now.setDate(now.getDate() + daysToAdd);
+                    Storage.saveQuestions(questions);
+                },
+                resetAllSRS: () => {
+                    const questions = Storage.getQuestions();
+                    questions.forEach(q => { q.srsLevel = 0; q.nextReviewDate = Date.now(); });
+                    Storage.saveQuestions(questions);
+                },
+                getResults: () => JSON.parse(localStorage.getItem('quizResults_srs')) || [],
+                addResult: (result) => {
+                    const results = Storage.getResults();
+                    results.push(result);
+                    localStorage.setItem('quizResults_srs', JSON.stringify(results));
+                }
+            };
+            
+            const SpeechService = {
+                recognition: null, isListening: false,
+                init: () => {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    if (SpeechRecognition) {
+                        SpeechService.recognition = new SpeechRecognition();
+                        SpeechService.recognition.continuous = false; SpeechService.recognition.lang = 'th-TH';
+                        SpeechService.recognition.interimResults = false; SpeechService.recognition.maxAlternatives = 1;
+                    } else { console.warn("เบราว์เซอร์นี้ไม่รองรับระบบการรู้จำเสียงพูด"); }
+                },
+                speak: (text, lang = 'en-US') => {
+                    if ('speechSynthesis' in window) {
+                        window.speechSynthesis.cancel();
+                        const utterance = new SpeechSynthesisUtterance(text);
+                        utterance.lang = lang; utterance.rate = 0.9;
+                        window.speechSynthesis.speak(utterance);
+                    } else { console.warn("เบราว์เซอร์นี้ไม่รองรับระบบการอ่านออกเสียง"); }
+                },
+                toggleListen: (micButton, targetInput) => {
+                    if (!SpeechService.recognition) { UI.showAlert('เบราว์เซอร์ของคุณไม่รองรับการพูดเพื่อพิมพ์', 'danger'); return; }
+                    if (SpeechService.isListening) { SpeechService.recognition.stop(); return; }
+                    SpeechService.recognition.start();
+                    SpeechService.recognition.onstart = () => {
+                        SpeechService.isListening = true; micButton.classList.add('mic-listening'); micButton.title = "กำลังฟัง...";
+                    };
+                    SpeechService.recognition.onend = () => {
+                        SpeechService.isListening = false; micButton.classList.remove('mic-listening'); micButton.title = "คลิกเพื่อพูดคำตอบ";
+                    };
+                    SpeechService.recognition.onresult = (event) => { targetInput.value = event.results[0][0].transcript; };
+                    SpeechService.recognition.onerror = (event) => { UI.showAlert(`เกิดข้อผิดพลาด: ${event.error}`, 'danger'); };
+                }
+            };
+
+            const UI = {
+                showAlert: (message, type = 'success') => {
+                    const alertContainer = document.getElementById('alert-container');
+                    const alertEl = document.createElement('div');
+                    alertEl.className = `alert alert-${type} alert-dismissible fade show`;
+                    alertEl.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+                    alertContainer.appendChild(alertEl);
+                    setTimeout(() => alertEl.remove(), 3000);
+                },
+                renderPage: (pageName) => {
+                    const template = document.getElementById(`template-${pageName}`);
+                    pageContent.innerHTML = template.innerHTML;
+                    mainNav.querySelectorAll('.nav-link').forEach(link => {
+                        link.classList.remove('active');
+                        if (link.dataset.page === pageName) link.classList.add('active');
+                    });
+                    if (pageName === 'manage') UI.renderManagePage();
+                    if (pageName === 'test') App.startOrResumeSession();
+                },
+                renderManagePage: () => {
+                    const questions = Storage.getQuestions();
+                    const listContainer = document.getElementById('questions-list');
+                    if (questions.length === 0) {
+                        listContainer.innerHTML = '<p class="text-center text-muted">ยังไม่มีคำศัพท์</p>';
+                    } else {
+                        const table = document.createElement('table');
+                        table.className = 'table table-striped table-hover';
+                        table.innerHTML = `<thead><tr><th>คำศัพท์</th><th>สถานะ</th><th class="text-end">จัดการ</th></tr></thead><tbody>${questions.map(q => {
+                            const nextReview = new Date(q.nextReviewDate); const now = new Date(); now.setHours(0,0,0,0);
+                            const isDue = nextReview <= now;
+                            const status = isDue ? '<span class="badge bg-warning">ถึงรอบทวน</span>' : `<span class="badge bg-secondary">อีก ${Math.ceil((nextReview - now) / (1000 * 60 * 60 * 24))} วัน</span>`;
+                            return `<tr><td>${q.question}<br><small class="text-muted">${q.answer}</small></td><td><span class="badge bg-info">Lv. ${q.srsLevel}</span> ${status}</td><td class="text-end"><button class="btn btn-sm btn-danger" data-id="${q.id}">ลบ</button></td></tr>`;
+                        }).join('')}</tbody>`;
+                        listContainer.innerHTML = ''; listContainer.appendChild(table);
+                    }
+                    document.getElementById('add-form').addEventListener('submit', e => { e.preventDefault(); const nq = document.getElementById('new-question'), na = document.getElementById('new-answer'); if (nq.value.trim() && na.value.trim()) { Storage.addQuestion(nq.value, na.value); UI.showAlert('เพิ่มคำศัพท์สำเร็จ!'); UI.renderManagePage(); } });
+                    listContainer.querySelectorAll('.btn-danger').forEach(b => { b.addEventListener('click', e => { if (confirm('ยืนยันการลบคำศัพท์นี้?')) { Storage.deleteQuestion(parseInt(e.target.dataset.id)); UI.showAlert('ลบคำศัพท์แล้ว', 'warning'); UI.renderManagePage(); } }); });
+                    document.getElementById('export-results-btn').addEventListener('click', App.exportResultsToCSV);
+                    document.getElementById('reset-srs-btn').addEventListener('click', () => { if (confirm('ยืนยันการรีเซ็ตความคืบหน้าทั้งหมด?')) { Storage.resetAllSRS(); UI.showAlert('รีเซ็ตความคืบหน้าทั้งหมดแล้ว', 'success'); UI.renderManagePage(); } });
+                },
+                updateSessionStats: () => {
+                    document.getElementById('due-count-badge').textContent = `กองหลัก: ${QuizSession.dueQuestions.length}`;
+                    document.getElementById('review-pile-badge').textContent = `ทวนซ้ำ: ${QuizSession.reviewPile.length}`;
+                },
+                displayQuestion: (question) => {
+                    const quizArea = document.getElementById('quiz-area');
+                    quizArea.innerHTML = `
+                        <p class="fs-4 d-flex justify-content-center align-items-center gap-2">
+                            จงแปลคำว่า "<strong>${question.question}</strong>"
+                            <button class="btn btn-sm btn-outline-secondary" id="speak-btn" title="ฟังเสียง"><i class="bi bi-volume-up-fill"></i></button>
+                        </p>
+                        <form id="quiz-form">
+                            <div class="input-group mb-3">
+                                <input type="text" id="quiz-answer" class="form-control" required autofocus autocomplete="off">
+                                <button type="button" class="btn btn-outline-secondary" id="mic-btn" title="พูดคำตอบ"><i class="bi bi-mic-fill"></i></button>
+                                <button type="submit" class="btn btn-primary">ส่งคำตอบ</button>
+                            </div>
+                            <button type="button" class="btn btn-outline-warning" id="skip-btn">ข้ามไปก่อน</button>
+                        </form><div id="result-area"></div>`;
+                    
+                    SpeechService.speak(question.question);
+                    document.getElementById('speak-btn').addEventListener('click', () => SpeechService.speak(question.question));
+                    const micButton = document.getElementById('mic-btn');
+                    if (SpeechService.recognition) { micButton.addEventListener('click', () => SpeechService.toggleListen(micButton, document.getElementById('quiz-answer'))); } 
+                    else { micButton.disabled = true; micButton.title = "ไม่รองรับ"; }
+                    
+                    document.getElementById('quiz-form').addEventListener('submit', App.handleAnswer);
+                    document.getElementById('skip-btn').addEventListener('click', App.handleSkip);
+                },
+                showSessionComplete: () => {
+                    const quizArea = document.getElementById('quiz-area');
+                    quizArea.innerHTML = '<div class="alert alert-success text-center"><h3>ยอดเยี่ยม!</h3><p>คุณทบทวนคำศัพท์สำหรับรอบนี้ทั้งหมดแล้ว</p></div>';
+                    QuizSession.isSessionActive = false;
+                }
+            };
+
+            const App = {
+                init: () => {
+                    SpeechService.init();
+                    mainNav.addEventListener('click', e => {
+                        e.preventDefault();
+                        if (e.target.matches('.nav-link')) {
+                            if (QuizSession.isSessionActive) {
+                                if (!confirm("คุณกำลังอยู่ในรอบทบทวน หากออกจากหน้านี้ความคืบหน้าจะหายไป ยืนยันหรือไม่?")) return;
+                                QuizSession.isSessionActive = false;
+                            }
+                            UI.renderPage(e.target.dataset.page);
+                        }
+                    });
+                    UI.renderPage('test');
+                },
+                startOrResumeSession: () => {
+                    if (!QuizSession.isSessionActive) {
+                        const allQuestions = Storage.getQuestions();
+                        const now = new Date(); now.setHours(0,0,0,0);
+                        QuizSession.dueQuestions = allQuestions.filter(q => q.nextReviewDate <= now);
+                        QuizSession.reviewPile = [];
+                        QuizSession.isSessionActive = true;
+                    }
+                    UI.updateSessionStats();
+                    App.nextQuestion();
+                },
+                nextQuestion: () => {
+                    let nextQ = null;
+                    if (QuizSession.dueQuestions.length > 0) {
+                        nextQ = QuizSession.dueQuestions.shift();
+                    } else if (QuizSession.reviewPile.length > 0) {
+                        nextQ = QuizSession.reviewPile.shift();
+                    }
+
+                    if (nextQ) {
+                        QuizSession.currentQuestion = nextQ;
+                        UI.displayQuestion(nextQ);
+                    } else {
+                        UI.showSessionComplete();
+                    }
+                    UI.updateSessionStats();
+                },
+                handleAnswer: (e) => {
+                    e.preventDefault();
+                    const userAnswer = document.getElementById('quiz-answer').value.trim();
+                    const question = QuizSession.currentQuestion;
+                    const isCorrect = userAnswer.toLowerCase() === question.answer.toLowerCase();
+                    
+                    Storage.addResult({ question: question.question, userAnswer, correctAnswer: question.answer, isCorrect, timestamp: new Date().toLocaleString('th-TH') });
+                    
+                    if (isCorrect) {
+                        Storage.updateQuestionSRS(question.id, true);
+                        UI.showAlert('ถูกต้อง!', 'success');
+                    } else {
+                        Storage.updateQuestionSRS(question.id, false);
+                        QuizSession.reviewPile.push(question);
+                        UI.showAlert(`ผิด! คำตอบคือ "${question.answer}"`, 'danger');
+                    }
+                    App.nextQuestion();
+                },
+                handleSkip: () => {
+                    const question = QuizSession.currentQuestion;
+                    QuizSession.reviewPile.push(question);
+                    UI.showAlert(`ข้ามคำว่า "${question.question}" ไปก่อน`, 'info');
+                    App.nextQuestion();
+                },
+                exportResultsToCSV: () => {
+                    const results = Storage.getResults();
+                    if (results.length === 0) { UI.showAlert('ยังไม่มีผลการทดสอบให้ส่งออก', 'info'); return; }
+                    const header = ['วันที่-เวลา', 'คำศัพท์', 'คำตอบของคุณ', 'คำตอบที่ถูก', 'ผลลัพธ์'];
+                    const rows = results.map(r => [r.timestamp, r.question, r.userAnswer, r.correctAnswer, r.isCorrect ? 'ถูกต้อง' : 'ผิด']);
+                    let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+                    csvContent += header.join(',') + '\n';
+                    rows.forEach(rowArray => { csvContent += rowArray.map(item => `"${String(item).replace(/"/g, '""')}"`).join(',') + '\n'; });
+                    const link = document.createElement("a");
+                    link.setAttribute("href", encodeURI(csvContent));
+                    link.setAttribute("download", "quiz_results.csv");
+                    document.body.appendChild(link); link.click(); link.remove();
+                    UI.showAlert('กำลังดาวน์โหลดไฟล์ผลลัพธ์...');
+                }
+            };
+
+            App.init();
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
