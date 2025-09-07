@@ -95,19 +95,26 @@
                     const data = localStorage.getItem('quizQuestions_srs');
                     if (!data) {
                         const initialQuestions = [
-                            { id: 1, question: 'apple', answer: 'แอปเปิ้ล' }, { id: 2, question: 'banana', answer: 'กล้วย' },
-                            { id: 3, question: 'cat', answer: 'แมว' }, { id: 4, question: 'dog', answer: 'สุนัข' },
-                            { id: 5, question: 'house', answer: 'บ้าน' }, { id: 6, question: 'Voltage', answer: 'แรงดันไฟฟ้า' },
-                            { id: 7, question: 'Current', answer: 'กระแสไฟฟ้า' }, { id: 8, question: 'Resistance', answer: 'ความต้านทาน' },
-                            { id: 9, question: 'Power', answer: 'กำลังไฟฟ้า' }, { id: 10, question: 'Capacitor', answer: 'ตัวเก็บประจุ' },
-                            { id: 11, question: 'Inductor', answer: 'ตัวเหนี่ยวนำ' }, { id: 12, question: 'Transformer', answer: 'หม้อแปลงไฟฟ้า' },
-                            { id: 13, question: 'Circuit Breaker', answer: 'เบรกเกอร์' }, { id: 14, question: 'Diode', answer: 'ไดโอด' },
-                            { id: 15, question: 'Transistor', answer: 'ทรานซิสเตอร์' }, { id: 16, question: 'Alternating Current', answer: 'ไฟฟ้ากระแสสลับ' },
-                            { id: 17, question: 'Direct Current', answer: 'ไฟฟ้ากระแสตรง' }, { id: 18, question: 'Frequency', answer: 'ความถี่' },
-                            { id: 19, question: 'Ohm\'s Law', answer: 'กฎของโอห์ม' }, { id: 20, question: 'Semiconductor', answer: 'สารกึ่งตัวนำ' },
-                            { id: 21, question: 'Ground', answer: 'สายดิน' }, { id: 22, question: 'Relay', answer: 'รีเลย์' },
-                            { id: 23, question: 'Motor', answer: 'มอเตอร์' }, { id: 24, question: 'Generator', answer: 'เครื่องกำเนิดไฟฟ้า' },
-                            { id: 25, question: 'Insulator', answer: 'ฉนวนไฟฟ้า' }
+                            { id: 1, question: 'Voltage', answer: 'แรงดันไฟฟ้า' },
+                            { id: 2, question: 'Current', answer: 'กระแสไฟฟ้า' },
+                            { id: 3, question: 'Resistance', answer: 'ความต้านทาน' },
+                            { id: 4, question: 'Power', answer: 'กำลังไฟฟ้า' },
+                            { id: 5, question: 'Capacitor', answer: 'ตัวเก็บประจุ' },
+                            { id: 6, question: 'Inductor', answer: 'ตัวเหนี่ยวนำ' },
+                            { id: 7, question: 'Transformer', answer: 'หม้อแปลงไฟฟ้า' },
+                            { id: 8, question: 'Circuit Breaker', answer: 'เบรกเกอร์' },
+                            { id: 9, question: 'Diode', answer: 'ไดโอด' },
+                            { id: 10, question: 'Transistor', answer: 'ทรานซิสเตอร์' },
+                            { id: 11, question: 'Alternating Current', answer: 'ไฟฟ้ากระแสสลับ' },
+                            { id: 12, question: 'Direct Current', answer: 'ไฟฟ้ากระแสตรง' },
+                            { id: 13, question: 'Frequency', answer: 'ความถี่' },
+                            { id: 14, question: 'Ohm\'s Law', answer: 'กฎของโอห์ม' },
+                            { id: 15, question: 'Semiconductor', answer: 'สารกึ่งตัวนำ' },
+                            { id: 16, question: 'Ground', answer: 'สายดิน' },
+                            { id: 17, question: 'Relay', answer: 'รีเลย์' },
+                            { id: 18, question: 'Motor', answer: 'มอเตอร์' },
+                            { id: 19, question: 'Generator', answer: 'เครื่องกำเนิดไฟฟ้า' },
+                            { id: 20, question: 'Insulator', answer: 'ฉนวนไฟฟ้า' }
                         ];
                         const processed = initialQuestions.map(q => ({ ...q, srsLevel: 0, nextReviewDate: Date.now() }));
                         localStorage.setItem('quizQuestions_srs', JSON.stringify(processed));
@@ -195,7 +202,7 @@
                             listContainer.querySelectorAll('.btn-danger').forEach(b => { b.addEventListener('click', e => { if (confirm('ยืนยันการลบคำศัพท์นี้?')) { Storage.deleteQuestion(parseInt(e.target.dataset.id)); UI.showAlert('ลบคำศัพท์แล้ว', 'warning'); UI.renderManagePage(); } }); });
                         }
                         document.getElementById('export-results-btn').addEventListener('click', App.exportResultsToCSV);
-                        document.getElementById('reset-srs-btn').addEventListener('click', () => { if (confirm('ยืนยันการรีเซ็ตความคืบหน้าทั้งหมด?')) { Storage.resetAllSRS(); UI.showAlert('รีเซ็ตความคืบหน้าทั้งหมดแล้ว', 'success'); UI.renderManagePage(); } });
+                        document.getElementById('reset-srs-btn').addEventListener('click', () => { if (confirm('ยืนันการรีเซ็ตความคืบหน้าทั้งหมด?')) { Storage.resetAllSRS(); UI.showAlert('รีเซ็ตความคืบหน้าทั้งหมดแล้ว', 'success'); UI.renderManagePage(); } });
                     }
                 },
                 updateSessionStats: () => {
@@ -284,9 +291,12 @@
                     if (!resume) {
                         const allQuestions = Storage.getQuestions();
                         const now = new Date(); now.setHours(0,0,0,0);
-                        QuizSession.dueQuestions = allQuestions.filter(q => q.nextReviewDate <= now);
+                        // *** จุดที่แก้ไข: กรองคำถามที่ถึงรอบทวนแล้วมาสลับลำดับ (สุ่ม) ***
+                        QuizSession.dueQuestions = allQuestions.filter(q => q.nextReviewDate <= now).sort(() => Math.random() - 0.5);
+                        
                         QuizSession.isPracticeMode = false;
                         if (QuizSession.dueQuestions.length === 0 && allQuestions.length > 0) {
+                            // โหมดฝึกหัด (ถ้าไม่มีคำถามที่ต้องทวน) จะสุ่มอยู่แล้ว
                             QuizSession.dueQuestions = [...allQuestions].sort(() => 0.5 - Math.random());
                             QuizSession.isPracticeMode = true;
                         }
@@ -301,11 +311,17 @@
                 },
                 nextQuestion: () => {
                     let nextQ = null;
+                    // เปลี่ยนจากการหยิบคำถามจากข้างหน้า มาเป็นข้างหลังแทน (pop) เพื่อประสิทธิภาพที่ดีกว่าเล็กน้อยกับ array ที่สุ่มแล้ว
                     if (QuizSession.dueQuestions.length > 0) {
-                        nextQ = QuizSession.dueQuestions.shift();
+                        nextQ = QuizSession.dueQuestions.pop();
                     } else if (QuizSession.reviewPile.length > 0) {
+                        // สำหรับกองคำถามที่ตอบผิด ยังคงให้สุ่มเหมือนเดิม
+                        if(QuizSession.reviewPile.length > 1) {
+                            QuizSession.reviewPile.sort(() => Math.random() - 0.5);
+                        }
                         nextQ = QuizSession.reviewPile.shift();
                     }
+
                     if (nextQ) {
                         QuizSession.currentQuestion = nextQ;
                         UI.displayQuestion(nextQ);
