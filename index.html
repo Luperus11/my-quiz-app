@@ -31,7 +31,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body" id="history-modal-body">
-            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -361,6 +361,7 @@
                 },
                 showSessionComplete: () => {
                     UI.showSessionComplete();
+                    App.exportResultsToCSV(); // <<<===== จุดที่แก้ไข
                     Storage.clearSession();
                 },
                 exportResultsToCSV: () => { const results = Storage.getResults(); if (results.length === 0) { UI.showAlert('ยังไม่มีผลการทดสอบให้ส่งออก', 'info'); return; } const header = ['วันที่-เวลา', 'คำศัพท์', 'คำตอบของคุณ', 'คำตอบที่ถูก', 'ผลลัพธ์']; const rows = results.map(r => [r.timestamp, r.question, r.userAnswer, r.correctAnswer, r.isCorrect ? 'ถูกต้อง' : 'ผิด']); let csv = "data:text/csv;charset=utf-8,\uFEFF"; csv += header.join(',') + '\n'; rows.forEach(row => { csv += row.map(item => `"${String(item).replace(/"/g, '""')}"`).join(',') + '\n'; }); const link = document.createElement("a"); link.setAttribute("href", encodeURI(csv)); link.setAttribute("download", "quiz_results.csv"); document.body.appendChild(link); link.click(); link.remove(); UI.showAlert('กำลังดาวน์โหลดไฟล์ผลลัพธ์...'); }
