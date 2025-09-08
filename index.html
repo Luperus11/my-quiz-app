@@ -6,6 +6,7 @@
     <title>เว็บทบทวนคำศัพท์</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { background-color: #f0f2f5; }
         .container { max-width: 700px; }
@@ -110,6 +111,35 @@
         </div>
     </template>
 
+    <template id="template-dashboard">
+        <button id="back-to-menu-btn" class="btn btn-secondary mb-3 w-100"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button>
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white"><h5><i class="bi bi-speedometer2"></i> แดชบอร์ดสรุปผล</h5></div>
+            <div class="card-body">
+                <div class="row text-center mb-4">
+                    <div class="col">
+                        <h4 class="mb-0 text-primary" id="total-questions">0</h4>
+                        <small class="text-muted">คำศัพท์ทั้งหมด</small>
+                    </div>
+                    <div class="col">
+                        <h4 class="mb-0 text-warning" id="due-for-review">0</h4>
+                        <small class="text-muted">ถึงรอบทวน</small>
+                    </div>
+                </div>
+                <hr>
+                <h6 class="mb-3">สัดส่วนคำศัพท์ตามหมวดหมู่</h6>
+                <div class="chart-container" style="position: relative; height:300px; width:100%">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+                <hr>
+                <h6 class="mb-3">ผลการตอบถูก/ผิด ย้อนหลัง 7 วัน</h6>
+                <div class="chart-container" style="position: relative; height:300px; width:100%">
+                    <canvas id="dailyResultChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </template>
+
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -125,70 +155,61 @@
             
             let historyModalInstance = null;
             let startSessionModalInstance = null;
+            let categoryChartInstance = null;
+            let dailyResultChartInstance = null;
 
             // --- STORAGE MODULE ---
             const Storage = {
                 getQuestions: () => {
-                    // --- จุดที่แก้ไข 1: เปลี่ยนชื่อที่จัดเก็บเป็น v3 ---
                     const data = localStorage.getItem('quizQuestions_srs_v3');
                     if (!data) {
                         const initialQuestions = [
-                            // หมวดหมู่: ไฟฟ้าและอิเล็กทรอนิกส์
-                            { id: 1, question: 'Voltage', answer: 'แรงดันไฟฟ้า', category: 'ไฟฟ้าและอิเล็กทรอนิกส์' },
-                            { id: 2, question: 'Current', answer: 'กระแสไฟฟ้า', category: 'ไฟฟ้าและอิเล็กทรอนิกส์' },
-                            { id: 3, question: 'Resistance', answer: 'ความต้านทาน', category: 'ไฟฟ้าและอิเล็กทรอนิกส์' },
-                            { id: 4, question: 'Power', answer: 'กำลังไฟฟ้า', category: 'ไฟฟ้าและอิเล็กทรอนิกส์' },
-                            { id: 5, question: 'Capacitor', answer: 'ตัวเก็บประจุ', category: 'ไฟฟ้าและอิเล็กทรอนิกส์' },
-                            { id: 6, question: 'Inductor', answer: 'ตัวเหนี่ยวนำ', category: 'ไฟฟ้าและอิเล็กทรอนิกส์' },
-                            { id: 7, question: 'Transformer', answer: 'หม้อแปลงไฟฟ้า', category: 'ไฟฟ้าและอิเล็กทรอนิกส์' },
-                            { id: 8, question: 'Circuit Breaker', answer: 'เบรกเกอร์', category: 'ไฟฟ้าและอิเล็กทรอนิกส์' },
-                            { id: 9, question: 'Diode', answer: 'ไดโอด', category: 'ไฟฟ้าและอิเล็กทรอนิกส์' },
-                            { id: 10, question: 'Transistor', answer: 'ทรานซิสเตอร์', category: 'ไฟฟ้าและอิเล็กทรอนิกส์' },
-                            { id: 11, question: 'Semiconductor', answer: 'สารกึ่งตัวนำ', category: 'ไฟฟ้าและอิเล็กทรอนิกส์' },
-                            { id: 12, question: 'Generator', answer: 'เครื่องกำเนิดไฟฟ้า', category: 'ไฟฟ้าและอิเล็กทรอนิกส์' },
+                            // หมวดหมู่: วิศวกรรมไฟฟ้า (เดิม)
+                            { id: 1, question: 'Voltage', answer: 'แรงดันไฟฟ้า', category: 'วิศวกรรมไฟฟ้า' },
+                            { id: 2, question: 'Current', answer: 'กระแสไฟฟ้า', category: 'วิศวกรรมไฟฟ้า' },
+                            { id: 3, question: 'Resistance', answer: 'ความต้านทาน', category: 'วิศวกรรมไฟฟ้า' },
+                            { id: 4, question: 'Capacitor', answer: 'ตัวเก็บประจุ', category: 'วิศวกรรมไฟฟ้า' },
+                            { id: 5, question: 'Transistor', answer: 'ทรานซิสเตอร์', category: 'วิศวกรรมไฟฟ้า' },
+                            { id: 6, question: 'Semiconductor', answer: 'สารกึ่งตัวนำ', category: 'วิศวกรรมไฟฟ้า' },
+                            { id: 7, question: 'Generator', answer: 'เครื่องกำเนิดไฟฟ้า', category: 'วิศวกรรมไฟฟ้า' },
+                            
+                            // หมวดหมู่: วิศวกรรมเครื่องกล
+                            { id: 8, question: 'Torque', answer: 'แรงบิด', category: 'วิศวกรรมเครื่องกล' },
+                            { id: 9, question: 'Velocity', answer: 'ความเร็ว', category: 'วิศวกรรมเครื่องกล' },
+                            { id: 10, question: 'Acceleration', answer: 'ความเร่ง', category: 'วิศวกรรมเครื่องกล' },
+                            { id: 11, question: 'Friction', answer: 'ความเสียดทาน', category: 'วิศวกรรมเครื่องกล' },
+                            { id: 12, question: 'Thermodynamics', answer: 'อุณหพลศาสตร์', category: 'วิศวกรรมเครื่องกล' },
+                            { id: 13, question: 'Viscosity', answer: 'ความหนืด', category: 'วิศวกรรมเครื่องกล' },
+                            { id: 14, question: 'Turbine', answer: 'กังหัน', category: 'วิศวกรรมเครื่องกล' },
 
-                            // หมวดหมู่: เทคโนโลยีและอินเทอร์เน็ต
-                            { id: 13, question: 'Algorithm', answer: 'อัลกอริทึม', category: 'เทคโนโลยี' },
-                            { id: 14, question: 'Database', answer: 'ฐานข้อมูล', category: 'เทคโนโลยี' },
-                            { id: 15, question: 'Bandwidth', answer: 'แบนด์วิดท์', category: 'เทคโนโลยี' },
-                            { id: 16, question: 'Firewall', answer: 'ไฟร์วอลล์', category: 'เทคโนโลยี' },
-                            { id: 17, question: 'Interface', answer: 'ส่วนต่อประสาน', category: 'เทคโนโลยี' },
-                            { id: 18, question: 'Encryption', answer: 'การเข้ารหัส', category: 'เทคโนโลยี' },
-                            { id: 19, question: 'Software', answer: 'ซอฟต์แวร์', category: 'เทคโนโลยี' },
-                            { id: 20, question: 'Hardware', answer: 'ฮาร์ดแวร์', category: 'เทคโนโลยี' },
-                            { id: 21, question: 'Network', answer: 'เครือข่าย', category: 'เทคโนโลยี' },
+                            // หมวดหมู่: วิศวกรรมโยธา
+                            { id: 15, question: 'Foundation', answer: 'ฐานราก', category: 'วิศวกรรมโยธา' },
+                            { id: 16, question: 'Beam', answer: 'คาน', category: 'วิศวกรรมโยธา' },
+                            { id: 17, question: 'Column', answer: 'เสา', category: 'วิศวกรรมโยธา' },
+                            { id: 18, question: 'Tension', answer: 'แรงดึง', category: 'วิศวกรรมโยธา' },
+                            { id: 19, question: 'Compression', answer: 'แรงอัด', category: 'วิศวกรรมโยธา' },
+                            { id: 20, question: 'Concrete', answer: 'คอนกรีต', category: 'วิศวกรรมโยธา' },
+                            { id: 21, question: 'Infrastructure', answer: 'โครงสร้างพื้นฐาน', category: 'วิศวกรรมโยธา' },
 
-                            // หมวดหมู่: คำกริยาในชีวิตประจำวัน
-                            { id: 22, question: 'Communicate', answer: 'สื่อสาร', category: 'คำกริยา' },
-                            { id: 23, question: 'Develop', answer: 'พัฒนา', category: 'คำกริยา' },
-                            { id: 24, question: 'Consider', answer: 'พิจารณา', category: 'คำกริยา' },
-                            { id: 25, question: 'Achieve', answer: 'บรรลุ', category: 'คำกริยา' },
-                            { id: 26, question: 'Improve', answer: 'ปรับปรุง', category: 'คำกริยา' },
-                            { id: 27, question: 'Organize', answer: 'จัดระเบียบ', category: 'คำกริยา' },
-                            { id: 28, question: 'Analyze', answer: 'วิเคราะห์', category: 'คำกริยา' },
-                            { id: 29, question: 'Demonstrate', answer: 'สาธิต', category: 'คำกริยา' },
-                            { id: 30, question: 'Participate', answer: 'มีส่วนร่วม', category: 'คำกริยา' },
+                            // หมวดหมู่: วิศวกรรมเคมี
+                            { id: 22, question: 'Catalyst', answer: 'ตัวเร่งปฏิกิริยา', category: 'วิศวกรรมเคมี' },
+                            { id: 23, question: 'Distillation', answer: 'การกลั่นลำดับส่วน', category: 'วิศวกรรมเคมี' },
+                            { id: 24, question: 'Molecule', answer: 'โมเลกุล', category: 'วิศวกรรมเคมี' },
+                            { id: 25, question: 'Polymer', answer: 'พอลิเมอร์', category: 'วิศวกรรมเคมี' },
+                            { id: 26, question: 'Reaction', answer: 'ปฏิกิริยา', category: 'วิศวกรรมเคมี' },
+                            { id: 27, question: 'Solvent', answer: 'ตัวทำละลาย', category: 'วิศวกรรมเคมี' },
 
-                            // หมวดหมู่: คำคุณศัพท์ทั่วไป
-                            { id: 31, question: 'Efficient', answer: 'มีประสิทธิภาพ', category: 'คำคุณศัพท์' },
-                            { id: 32, question: 'Essential', answer: 'จำเป็น', category: 'คำคุณศัพท์' },
-                            { id: 33, question: 'Reliable', answer: 'เชื่อถือได้', category: 'คำคุณศัพท์' },
-                            { id: 34, question: 'Complicated', answer: 'ซับซ้อน', category: 'คำคุณศัพท์' },
-                            { id: 35, question: 'Accurate', answer: 'แม่นยำ', category: 'คำคุณศัพท์' },
-                            { id: 36, question: 'Flexible', answer: 'ยืดหยุ่น', category: 'คำคุณศัพท์' },
-                            { id: 37, question: 'Significant', answer: 'สำคัญ', category: 'คำคุณศัพท์' },
-
-                            // หมวดหมู่: ธุรกิจและสำนักงาน
-                            { id: 38, question: 'Negotiate', answer: 'เจรจาต่อรอง', category: 'ธุรกิจ' },
-                            { id: 39, question: 'Deadline', answer: 'กำหนดส่งงาน', category: 'ธุรกิจ' },
-                            { id: 40, question: 'Invoice', answer: 'ใบแจ้งหนี้', category: 'ธุรกิจ' },
-                            { id: 41, question: 'Presentation', answer: 'การนำเสนอ', category: 'ธุรกิจ' },
-                            { id: 42, question: 'Strategy', answer: 'กลยุทธ์', category: 'ธุรกิจ' },
-                            { id: 43, question: 'Customer', answer: 'ลูกค้า', category: 'ธุรกิจ' },
-                            { id: 44, question: 'Appointment', answer: 'การนัดหมาย', category: 'ธุรกิจ' }
+                            // หมวดหมู่: วิศวกรรมคอมพิวเตอร์
+                            { id: 28, question: 'Algorithm', answer: 'อัลกอริทึม', category: 'วิศวกรรมคอมพิวเตอร์' },
+                            { id: 29, question: 'Database', answer: 'ฐานข้อมูล', category: 'วิศวกรรมคอมพิวเตอร์' },
+                            { id: 30, question: 'Firewall', answer: 'ไฟร์วอลล์', category: 'วิศวกรรมคอมพิวเตอร์' },
+                            { id: 31, question: 'Encryption', answer: 'การเข้ารหัส', category: 'วิศวกรรมคอมพิวเตอร์' },
+                            { id: 32, question: 'Software', answer: 'ซอฟต์แวร์', category: 'วิศวกรรมคอมพิวเตอร์' },
+                            { id: 33, question: 'Hardware', answer: 'ฮาร์ดแวร์', category: 'วิศวกรรมคอมพิวเตอร์' },
+                            { id: 34, question: 'Network', answer: 'เครือข่าย', category: 'วิศวกรรมคอมพิวเตอร์' },
+                            { id: 35, question: 'Compiler', answer: 'คอมไพเลอร์', category: 'วิศวกรรมคอมพิวเตอร์' }
                         ];
                         const processed = initialQuestions.map(q => ({ ...q, srsLevel: 0, nextReviewDate: Date.now() }));
-                        // --- จุดที่แก้ไข 2: เปลี่ยนชื่อที่จัดเก็บเป็น v3 ---
                         localStorage.setItem('quizQuestions_srs_v3', JSON.stringify(processed));
                         return processed;
                     }
@@ -201,7 +222,6 @@
                     if (needsSave) Storage.saveQuestions(questions);
                     return questions;
                 },
-                // --- จุดที่แก้ไข 3: เปลี่ยนชื่อที่จัดเก็บเป็น v3 ---
                 saveQuestions: (q) => localStorage.setItem('quizQuestions_srs_v3', JSON.stringify(q)),
                 addQuestion: (q, a, c) => { 
                     const qs = Storage.getQuestions(); 
@@ -285,6 +305,7 @@
                                 ${hasActiveSession ? `<button id="resume-btn" class="btn btn-warning btn-lg"><i class="bi bi-play-circle-fill"></i> ทำต่อจากครั้งที่แล้ว</button>` : ''}
                                 <button id="start-new-btn" class="btn btn-primary btn-lg"><i class="bi bi-stars"></i> เริ่มทำแบบทดสอบ</button>
                                 <button id="manage-btn" class="btn btn-outline-secondary"><i class="bi bi-gear-fill"></i> จัดการข้อมูล</button>
+                                <button id="dashboard-btn" class="btn btn-outline-info"><i class="bi bi-graph-up"></i> ดูสถิติ</button>
                             </div>
                         </div>
                     `;
@@ -294,6 +315,7 @@
                         UI.showStartSessionModal();
                     });
                     document.getElementById('manage-btn').addEventListener('click', () => UI.renderManagePage());
+                    document.getElementById('dashboard-btn').addEventListener('click', () => UI.renderDashboardPage());
                 },
                 showStartSessionModal: () => {
                     const categorySelect = document.getElementById('category-select');
@@ -375,6 +397,11 @@
                             UI.renderManagePage(); 
                         } 
                     });
+                },
+                renderDashboardPage: () => {
+                    appRoot.innerHTML = document.getElementById('template-dashboard').innerHTML;
+                    document.getElementById('back-to-menu-btn').addEventListener('click', UI.renderMainMenu);
+                    App.loadDashboardData();
                 },
                 updateSessionStats: () => {
                     const titleEl = document.getElementById('session-title');
@@ -554,11 +581,13 @@
                     QuizSession.answeredThisSession.push({ question: q, userAnswer: answer, isCorrect: correct });
                     Storage.addResult({ question: q.question, userAnswer: answer, correctAnswer: q.answer, isCorrect: correct, timestamp: new Date().toLocaleString('th-TH') });
                     
+                    if (!QuizSession.isPracticeMode) {
+                        Storage.updateQuestionSRS(q.id, correct); 
+                    }
+                    
                     if (correct) {
-                        if (!QuizSession.isPracticeMode) { Storage.updateQuestionSRS(q.id, true); }
                         UI.showAlert('ถูกต้อง!', 'success');
                     } else {
-                        Storage.updateQuestionSRS(q.id, false);
                         UI.showAlert(`ผิด! คำตอบคือ "${correctAnswer}"`, 'danger');
                     }
                     
@@ -609,6 +638,130 @@
                     link.click(); 
                     link.remove(); 
                     UI.showAlert('กำลังดาวน์โหลดไฟล์ผลลัพธ์...'); 
+                },
+                loadDashboardData: () => {
+                    const allQuestions = Storage.getQuestions();
+                    const allResults = Storage.getResults();
+
+                    document.getElementById('total-questions').textContent = allQuestions.length;
+
+                    const now = new Date();
+                    now.setHours(0, 0, 0, 0);
+                    const dueCount = allQuestions.filter(q => new Date(q.nextReviewDate) <= now).length;
+                    document.getElementById('due-for-review').textContent = dueCount;
+
+                    const categoryCounts = allQuestions.reduce((acc, q) => {
+                        acc[q.category] = (acc[q.category] || 0) + 1;
+                        return acc;
+                    }, {});
+                    const categoryLabels = Object.keys(categoryCounts);
+                    const categoryData = Object.values(categoryCounts);
+                    const categoryColors = categoryLabels.map((_, i) => `hsl(${i * 60}, 70%, 70%)`);
+
+                    if (categoryChartInstance) {
+                        categoryChartInstance.destroy();
+                    }
+                    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+                    categoryChartInstance = new Chart(categoryCtx, {
+                        type: 'pie',
+                        data: {
+                            labels: categoryLabels,
+                            datasets: [{
+                                data: categoryData,
+                                backgroundColor: categoryColors,
+                                hoverOffset: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'right',
+                                },
+                                title: {
+                                    display: false,
+                                }
+                            }
+                        }
+                    });
+
+                    const dailyResults = {};
+                    for (let i = 6; i >= 0; i--) {
+                        const d = new Date(now);
+                        d.setDate(now.getDate() - i);
+                        const dateString = d.toLocaleDateString('th-TH');
+                        dailyResults[dateString] = { correct: 0, wrong: 0 };
+                    }
+
+                    allResults.forEach(r => {
+                        const resultDateStr = r.timestamp.split(',')[0];
+                        const [day, month, year] = resultDateStr.split('/');
+                        const resultDate = new Date(`${year}-${month}-${day}`).toLocaleDateString('th-TH');
+                        
+                        if (dailyResults[resultDate]) {
+                            if (r.isCorrect) {
+                                dailyResults[resultDate].correct++;
+                            } else {
+                                dailyResults[resultDate].wrong++;
+                            }
+                        }
+                    });
+
+                    const dailyLabels = Object.keys(dailyResults);
+                    const dailyCorrectData = dailyLabels.map(date => dailyResults[date].correct);
+                    const dailyWrongData = dailyLabels.map(date => dailyResults[date].wrong);
+                    
+                    if (dailyResultChartInstance) {
+                        dailyResultChartInstance.destroy();
+                    }
+                    const dailyResultCtx = document.getElementById('dailyResultChart').getContext('2d');
+                    dailyResultChartInstance = new Chart(dailyResultCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: dailyLabels,
+                            datasets: [
+                                {
+                                    label: 'ตอบถูก',
+                                    data: dailyCorrectData,
+                                    backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                                    borderColor: 'rgba(75, 192, 192, 1)',
+                                    borderWidth: 1
+                                },
+                                {
+                                    label: 'ตอบผิด',
+                                    data: dailyWrongData,
+                                    backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                                    borderColor: 'rgba(255, 99, 132, 1)',
+                                    borderWidth: 1
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: 'จำนวนข้อ'
+                                    },
+                                    ticks: {
+                                        stepSize: 1
+                                    }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                },
+                                title: {
+                                    display: false,
+                                }
+                            }
+                        }
+                    });
                 }
             };
 
