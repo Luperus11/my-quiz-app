@@ -120,7 +120,7 @@
             let QuizSession = {
                 dueQuestions: [], reviewPile: [], answeredThisSession: [], 
                 currentQuestion: null, isSessionActive: false, isPracticeMode: false, 
-                allQuestionsCache: [], mode: 'multiple_choice', category: 'all' // เพิ่ม mode กับ category
+                allQuestionsCache: [], mode: 'multiple_choice', category: 'all'
             };
             
             let historyModalInstance = null;
@@ -129,19 +129,63 @@
             // --- STORAGE MODULE ---
             const Storage = {
                 getQuestions: () => {
-                    const data = localStorage.getItem('quizQuestions_srs_v2'); // เปลี่ยน key เพื่อรองรับโครงสร้างใหม่
+                    const data = localStorage.getItem('quizQuestions_srs_v2');
                     if (!data) {
+                        // --- จุดที่แก้ไข: เพิ่มคำศัพท์ชุดใหม่ที่นี่ ---
                         const initialQuestions = [
-                            { id: 1, question: 'Voltage', answer: 'แรงดันไฟฟ้า', category: 'ไฟฟ้าเบื้องต้น' },
-                            { id: 2, question: 'Current', answer: 'กระแสไฟฟ้า', category: 'ไฟฟ้าเบื้องต้น' },
-                            { id: 3, question: 'Resistance', answer: 'ความต้านทาน', category: 'ไฟฟ้าเบื้องต้น' },
-                            { id: 4, question: 'Power', answer: 'กำลังไฟฟ้า', category: 'ไฟฟ้าเบื้องต้น' },
-                            { id: 5, question: 'Capacitor', answer: 'ตัวเก็บประจุ', category: 'อุปกรณ์อิเล็กทรอนิกส์' },
-                            { id: 6, question: 'Inductor', answer: 'ตัวเหนี่ยวนำ', category: 'อุปกรณ์อิเล็กทรอนิกส์' },
-                            { id: 7, question: 'Transformer', answer: 'หม้อแปลงไฟฟ้า', category: 'อุปกรณ์อิเล็กทรอนิกส์' },
-                            { id: 8, question: 'Circuit Breaker', answer: 'เบรกเกอร์', category: 'อุปกรณ์ป้องกัน' },
-                            { id: 9, question: 'Diode', answer: 'ไดโอด', category: 'อุปกรณ์อิเล็กทรอนิกส์' },
-                            { id: 10, question: 'Transistor', answer: 'ทรานซิสเตอร์', category: 'อุปกรณ์อิเล็กทรอนิกส์' }
+                            // หมวดหมู่: ไฟฟ้าและอิเล็กทรอนิกส์
+                            { id: 1, question: 'Voltage', answer: 'แรงดันไฟฟ้า', category: 'ไฟฟ้าและอิเล็กทรอนิกส์' },
+                            { id: 2, question: 'Current', answer: 'กระแสไฟฟ้า', category: 'ไฟฟ้าและอิเล็กทรอนิกส์' },
+                            { id: 3, question: 'Resistance', answer: 'ความต้านทาน', category: 'ไฟฟ้าและอิเล็กทรอนิกส์' },
+                            { id: 4, question: 'Power', answer: 'กำลังไฟฟ้า', category: 'ไฟฟ้าและอิเล็กทรอนิกส์' },
+                            { id: 5, question: 'Capacitor', answer: 'ตัวเก็บประจุ', category: 'ไฟฟ้าและอิเล็กทรอนิกส์' },
+                            { id: 6, question: 'Inductor', answer: 'ตัวเหนี่ยวนำ', category: 'ไฟฟ้าและอิเล็กทรอนิกส์' },
+                            { id: 7, question: 'Transformer', answer: 'หม้อแปลงไฟฟ้า', category: 'ไฟฟ้าและอิเล็กทรอนิกส์' },
+                            { id: 8, question: 'Circuit Breaker', answer: 'เบรกเกอร์', category: 'ไฟฟ้าและอิเล็กทรอนิกส์' },
+                            { id: 9, question: 'Diode', answer: 'ไดโอด', category: 'ไฟฟ้าและอิเล็กทรอนิกส์' },
+                            { id: 10, question: 'Transistor', answer: 'ทรานซิสเตอร์', category: 'ไฟฟ้าและอิเล็กทรอนิกส์' },
+                            { id: 11, question: 'Semiconductor', answer: 'สารกึ่งตัวนำ', category: 'ไฟฟ้าและอิเล็กทรอนิกส์' },
+                            { id: 12, question: 'Generator', answer: 'เครื่องกำเนิดไฟฟ้า', category: 'ไฟฟ้าและอิเล็กทรอนิกส์' },
+
+                            // หมวดหมู่: เทคโนโลยีและอินเทอร์เน็ต
+                            { id: 13, question: 'Algorithm', answer: 'อัลกอริทึม', category: 'เทคโนโลยี' },
+                            { id: 14, question: 'Database', answer: 'ฐานข้อมูล', category: 'เทคโนโลยี' },
+                            { id: 15, question: 'Bandwidth', answer: 'แบนด์วิดท์', category: 'เทคโนโลยี' },
+                            { id: 16, question: 'Firewall', answer: 'ไฟร์วอลล์', category: 'เทคโนโลยี' },
+                            { id: 17, question: 'Interface', answer: 'ส่วนต่อประสาน', category: 'เทคโนโลยี' },
+                            { id: 18, question: 'Encryption', answer: 'การเข้ารหัส', category: 'เทคโนโลยี' },
+                            { id: 19, question: 'Software', answer: 'ซอฟต์แวร์', category: 'เทคโนโลยี' },
+                            { id: 20, question: 'Hardware', answer: 'ฮาร์ดแวร์', category: 'เทคโนโลยี' },
+                            { id: 21, question: 'Network', answer: 'เครือข่าย', category: 'เทคโนโลยี' },
+
+                            // หมวดหมู่: คำกริยาในชีวิตประจำวัน
+                            { id: 22, question: 'Communicate', answer: 'สื่อสาร', category: 'คำกริยา' },
+                            { id: 23, question: 'Develop', answer: 'พัฒนา', category: 'คำกริยา' },
+                            { id: 24, question: 'Consider', answer: 'พิจารณา', category: 'คำกริยา' },
+                            { id: 25, question: 'Achieve', answer: 'บรรลุ', category: 'คำกริยา' },
+                            { id: 26, question: 'Improve', answer: 'ปรับปรุง', category: 'คำกริยา' },
+                            { id: 27, question: 'Organize', answer: 'จัดระเบียบ', category: 'คำกริยา' },
+                            { id: 28, question: 'Analyze', answer: 'วิเคราะห์', category: 'คำกริยา' },
+                            { id: 29, question: 'Demonstrate', answer: 'สาธิต', category: 'คำกริยา' },
+                            { id: 30, question: 'Participate', answer: 'มีส่วนร่วม', category: 'คำกริยา' },
+
+                            // หมวดหมู่: คำคุณศัพท์ทั่วไป
+                            { id: 31, question: 'Efficient', answer: 'มีประสิทธิภาพ', category: 'คำคุณศัพท์' },
+                            { id: 32, question: 'Essential', answer: 'จำเป็น', category: 'คำคุณศัพท์' },
+                            { id: 33, question: 'Reliable', answer: 'เชื่อถือได้', category: 'คำคุณศัพท์' },
+                            { id: 34, question: 'Complicated', answer: 'ซับซ้อน', category: 'คำคุณศัพท์' },
+                            { id: 35, question: 'Accurate', answer: 'แม่นยำ', category: 'คำคุณศัพท์' },
+                            { id: 36, question: 'Flexible', answer: 'ยืดหยุ่น', category: 'คำคุณศัพท์' },
+                            { id: 37, question: 'Significant', answer: 'สำคัญ', category: 'คำคุณศัพท์' },
+
+                            // หมวดหมู่: ธุรกิจและสำนักงาน
+                            { id: 38, question: 'Negotiate', answer: 'เจรจาต่อรอง', category: 'ธุรกิจ' },
+                            { id: 39, question: 'Deadline', answer: 'กำหนดส่งงาน', category: 'ธุรกิจ' },
+                            { id: 40, question: 'Invoice', answer: 'ใบแจ้งหนี้', category: 'ธุรกิจ' },
+                            { id: 41, question: 'Presentation', answer: 'การนำเสนอ', category: 'ธุรกิจ' },
+                            { id: 42, question: 'Strategy', answer: 'กลยุทธ์', category: 'ธุรกิจ' },
+                            { id: 43, question: 'Customer', answer: 'ลูกค้า', category: 'ธุรกิจ' },
+                            { id: 44, question: 'Appointment', answer: 'การนัดหมาย', category: 'ธุรกิจ' }
                         ];
                         const processed = initialQuestions.map(q => ({ ...q, srsLevel: 0, nextReviewDate: Date.now() }));
                         localStorage.setItem('quizQuestions_srs_v2', JSON.stringify(processed));
@@ -168,7 +212,7 @@
                     const qs = Storage.getQuestions(); 
                     const q = qs.find(i => i.id === id); 
                     if (!q) return; 
-                    if (correct) { q.srsLevel++; } else { q.srsLevel = Math.max(0, q.srsLevel - 1); } // ลด level ถ้าตอบผิด
+                    if (correct) { q.srsLevel++; } else { q.srsLevel = Math.max(0, q.srsLevel - 1); }
                     const days = SRS_LEVELS[Math.min(q.srsLevel, SRS_LEVELS.length - 1)] || 1; 
                     const now = new Date(); 
                     now.setHours(0, 0, 0, 0); 
@@ -218,7 +262,7 @@
                 toggleListen: (btn, lang) => {
                     if (!SpeechService.recognition) { UI.showAlert('เบราว์เซอร์ของคุณไม่รองรับการพูดเพื่อพิมพ์', 'danger'); return; }
                     if (SpeechService.isListening) { SpeechService.recognition.stop(); return; }
-                    SpeechService.recognition.lang = lang; // ตั้งค่าภาษาที่รับเสียง
+                    SpeechService.recognition.lang = lang;
                     SpeechService.recognition.start();
                     SpeechService.recognition.onstart = () => { SpeechService.isListening = true; btn.classList.add('mic-listening'); btn.title = "กำลังฟัง..."; };
                     SpeechService.recognition.onend = () => { SpeechService.isListening = false; btn.classList.remove('mic-listening'); btn.title = "คลิกเพื่อพูดคำตอบ"; };
@@ -252,7 +296,6 @@
                 showStartSessionModal: () => {
                     const categorySelect = document.getElementById('category-select');
                     const categories = Storage.getCategories();
-                    // Clear old options except the first two
                     while (categorySelect.options.length > 2) {
                         categorySelect.remove(2);
                     }
@@ -264,7 +307,7 @@
                     });
 
                     if (!startSessionModalInstance) {
-                        startSessionModalInstance = new bootstrap.Modal(document.getElementById('startSessionModal'));
+                         startSessionModalInstance = new bootstrap.Modal(document.getElementById('startSessionModal'));
                     }
                     startSessionModalInstance.show();
 
@@ -358,7 +401,6 @@
                     const speechLang = isReverse ? 'th-TH' : 'en-US';
                     const micLang = isReverse ? 'en-US' : 'th-TH';
 
-                    // Base structure
                     questionHTML = `
                         <div class="d-flex justify-content-between mb-2">
                             <button class="btn btn-sm btn-outline-secondary" id="back-to-menu-quiz-btn"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button>
@@ -371,21 +413,21 @@
                         questionHTML += `
                             <form id="typing-form">
                                 <div class="input-group my-3">
-                                    <input type="text" id="typing-answer" class="form-control" placeholder="พิมพ์คำตอบที่นี่..." autocomplete="off" autofocus>
-                                    <button class="btn btn-primary" type="submit">ส่งคำตอบ</button>
+                                     <input type="text" id="typing-answer" class="form-control" placeholder="พิมพ์คำตอบที่นี่..." autocomplete="off" autofocus>
+                                     <button class="btn btn-primary" type="submit">ส่งคำตอบ</button>
                                 </div>
                             </form>
                         `;
-                    } else { // Multiple choice and reverse
-                        const choices = App.generateChoices(q, QuizSession.allQuestionsCache, isReverse);
-                        questionHTML += `
+                    } else {
+                         const choices = App.generateChoices(q, QuizSession.allQuestionsCache, isReverse);
+                         questionHTML += `
                             <div id="choices-area" class="d-grid gap-2 my-3">
                                 ${choices.map(choice => `<button class="btn btn-outline-primary choice-btn">${choice}</button>`).join('')}
                             </div>
-                        `;
+                         `;
                     }
 
-                    questionHTML += `
+                     questionHTML += `
                         <div class="d-flex justify-content-center align-items-center gap-3">
                             <button class="btn btn-lg btn-secondary rounded-circle" id="mic-btn" title="พูดคำตอบ"><i class="bi bi-mic-fill"></i></button>
                             <button class="btn btn-outline-warning" id="skip-btn">ข้ามไปก่อน</button>
@@ -461,7 +503,6 @@
                         let allQuestions = Storage.getQuestions();
                         QuizSession.allQuestionsCache = allQuestions; 
                         
-                        // Filter by category
                         let filteredQuestions = allQuestions;
                         if (options.category !== 'all' && options.category !== 'due') {
                             filteredQuestions = allQuestions.filter(q => q.category === options.category);
@@ -470,9 +511,9 @@
                         const now = new Date(); now.setHours(0,0,0,0);
                         
                         if (options.category === 'due') {
-                            QuizSession.dueQuestions = allQuestions.filter(q => q.nextReviewDate <= now).sort(() => Math.random() - 0.5);
+                             QuizSession.dueQuestions = allQuestions.filter(q => q.nextReviewDate <= now).sort(() => Math.random() - 0.5);
                         } else {
-                            QuizSession.dueQuestions = filteredQuestions.sort(() => Math.random() - 0.5);
+                             QuizSession.dueQuestions = filteredQuestions.sort(() => Math.random() - 0.5);
                         }
 
                         QuizSession.isPracticeMode = (options.category !== 'due');
@@ -488,7 +529,7 @@
                     App.nextQuestion();
                 },
                 nextQuestion: () => {
-                    let nextQ = QuizSession.reviewPile.shift() || QuizSession.dueQuestions.pop();
+                    let nextQ = QuizSession.dueQuestions.pop();
                     
                     if (nextQ) {
                         QuizSession.currentQuestion = nextQ;
@@ -516,20 +557,19 @@
                         UI.showAlert('ถูกต้อง!', 'success');
                     } else {
                         Storage.updateQuestionSRS(q.id, false);
-                        QuizSession.reviewPile.push(q);
                         UI.showAlert(`ผิด! คำตอบคือ "${correctAnswer}"`, 'danger');
                     }
                     
                     QuizSession.currentQuestion = null; 
-                    setTimeout(() => App.nextQuestion(), correct ? 800 : 1500);
+                    setTimeout(() => App.nextQuestion(), 1200);
                 },
                 generateChoices: (correctQuestion, allQuestions, isReverse = false) => {
                     const correctAnswer = isReverse ? correctQuestion.question : correctQuestion.answer;
                     const choices = [correctAnswer];
                     const distractors = allQuestions
                         .filter(q => q.id !== correctQuestion.id)
-                        .map(q => isReverse ? q.question : q.answer) // เอาคำตอบจากโจทย์อื่น
-                        .filter(ans => ans !== correctAnswer); // กันคำตอบซ้ำ
+                        .map(q => isReverse ? q.question : q.answer)
+                        .filter(ans => ans !== correctAnswer);
                     
                     const shuffledDistractors = [...new Set(distractors)].sort(() => 0.5 - Math.random());
 
@@ -544,7 +584,6 @@
                     const q = QuizSession.currentQuestion;
                     if (!q) return;
                     QuizSession.answeredThisSession.push({ question: q, userAnswer: '(ข้าม)', isCorrect: false });
-                    QuizSession.reviewPile.push(q);
                     UI.showAlert(`ข้ามคำว่า "${q.question}" ไปก่อน`, 'info');
                     QuizSession.currentQuestion = null;
                     setTimeout(() => App.nextQuestion(), 500);
