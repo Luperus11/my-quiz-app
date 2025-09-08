@@ -129,9 +129,9 @@
             // --- STORAGE MODULE ---
             const Storage = {
                 getQuestions: () => {
-                    const data = localStorage.getItem('quizQuestions_srs_v2');
+                    // --- จุดที่แก้ไข 1: เปลี่ยนชื่อที่จัดเก็บเป็น v3 ---
+                    const data = localStorage.getItem('quizQuestions_srs_v3');
                     if (!data) {
-                        // --- จุดที่แก้ไข: เพิ่มคำศัพท์ชุดใหม่ที่นี่ ---
                         const initialQuestions = [
                             // หมวดหมู่: ไฟฟ้าและอิเล็กทรอนิกส์
                             { id: 1, question: 'Voltage', answer: 'แรงดันไฟฟ้า', category: 'ไฟฟ้าและอิเล็กทรอนิกส์' },
@@ -188,7 +188,8 @@
                             { id: 44, question: 'Appointment', answer: 'การนัดหมาย', category: 'ธุรกิจ' }
                         ];
                         const processed = initialQuestions.map(q => ({ ...q, srsLevel: 0, nextReviewDate: Date.now() }));
-                        localStorage.setItem('quizQuestions_srs_v2', JSON.stringify(processed));
+                        // --- จุดที่แก้ไข 2: เปลี่ยนชื่อที่จัดเก็บเป็น v3 ---
+                        localStorage.setItem('quizQuestions_srs_v3', JSON.stringify(processed));
                         return processed;
                     }
                     let questions = JSON.parse(data);
@@ -200,7 +201,8 @@
                     if (needsSave) Storage.saveQuestions(questions);
                     return questions;
                 },
-                saveQuestions: (q) => localStorage.setItem('quizQuestions_srs_v2', JSON.stringify(q)),
+                // --- จุดที่แก้ไข 3: เปลี่ยนชื่อที่จัดเก็บเป็น v3 ---
+                saveQuestions: (q) => localStorage.setItem('quizQuestions_srs_v3', JSON.stringify(q)),
                 addQuestion: (q, a, c) => { 
                     const qs = Storage.getQuestions(); 
                     const id = qs.length > 0 ? Math.max(...qs.map(i => i.id)) + 1 : 1; 
