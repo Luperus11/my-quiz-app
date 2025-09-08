@@ -12,760 +12,186 @@
         .container { max-width: 700px; }
         .card { border: none; border-radius: 0.75rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
         #alert-container { position: fixed; top: 1rem; right: 1rem; z-index: 1055; min-width: 250px; }
+        .hidden { display: none !important; }
         .mic-listening { color: #fff; background-color: #dc3545; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); } 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); } }
-        .modal-backdrop.show { opacity: .5; }
-        .choice-btn { min-height: 60px; font-size: 1.1rem; }
     </style>
 </head>
 <body>
     <div class="container my-4">
-        <main id="app-root"></main>
+        <div id="login-section">
+            <div class="card p-4">
+                <h2 class="text-center mb-4">เข้าสู่ระบบ</h2>
+                <div id="login-alert" class="alert alert-danger hidden" role="alert"></div>
+                <div class="mb-3"><label for="login-email" class="form-label">อีเมล</label><input type="email" id="login-email" class="form-control" required></div>
+                <div class="mb-3"><label for="login-password" class="form-label">รหัสผ่าน</label><input type="password" id="login-password" class="form-control" required></div>
+                <div class="d-grid gap-2"><button type="button" id="login-btn" class="btn btn-primary">เข้าสู่ระบบ</button></div>
+                <p class="text-center mt-3 mb-0">ยังไม่มีบัญชี? <a href="#" id="go-to-register">สมัครสมาชิกที่นี่</a></p>
+            </div>
+        </div>
+        <div id="register-section" class="hidden">
+            <div class="card p-4">
+                <h2 class="text-center mb-4">สมัครสมาชิกใหม่</h2>
+                <div id="register-alert" class="alert alert-danger hidden" role="alert"></div>
+                <div class="mb-3"><label for="register-email" class="form-label">อีเมล</label><input type="email" id="register-email" class="form-control" required></div>
+                <div class="mb-3"><label for="register-password" class="form-label">รหัสผ่าน (6 ตัวอักษรขึ้นไป)</label><input type="password" id="register-password" class="form-control" required></div>
+                <div class="d-grid gap-2"><button type="button" id="register-btn" class="btn btn-success">ยืนยันการสมัคร</button></div>
+                <p class="text-center mt-3 mb-0">มีบัญชีอยู่แล้ว? <a href="#" id="go-to-login">กลับไปหน้าเข้าสู่ระบบ</a></p>
+            </div>
+        </div>
+        <main id="app-root" class="hidden"></main>
     </div>
 
     <div id="alert-container"></div>
     
-    <div class="modal fade" id="historyModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-scrollable">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">ข้อที่ตอบไปแล้วในรอบนี้</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body" id="history-modal-body"></div>
-        </div>
-      </div>
-    </div>
+    <div class="modal fade" id="historyModal" tabindex="-1"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">ข้อที่ตอบไปแล้วในรอบนี้</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="history-modal-body"></div></div></div></div>
+    <div class="modal fade" id="startSessionModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">เริ่มรอบทบทวนใหม่</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="mb-3"><label for="category-select" class="form-label">เลือกหมวดหมู่</label><select id="category-select" class="form-select"><option value="all">ทบทวนทั้งหมด</option><option value="due">เฉพาะที่ถึงรอบทวน</option></select></div><div class="mb-3"><label for="mode-select" class="form-label">เลือกรูปแบบการทบทวน</label><select id="mode-select" class="form-select"><option value="multiple_choice">ตัวเลือก (อังกฤษ -> ไทย)</option><option value="reverse">ตัวเลือก (ไทย -> อังกฤษ)</option><option value="typing">พิมพ์ตอบ (อังกฤษ -> ไทย)</option></select></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button><button type="button" id="confirm-start-btn" class="btn btn-primary">เริ่มต้น</button></div></div></div></div>
+    <template id="template-main-menu"><div class="card"><div class="card-body"><div class="d-flex justify-content-between align-items-center mb-4"><h5 class="mb-0" id="welcome-message"></h5><button id="logout-btn" class="btn btn-sm btn-outline-danger">ออกจากระบบ</button></div><div class="text-center p-2"><h1 class="text-primary mb-3">เว็บทบทวนคำศัพท์</h1><p class="text-muted mb-4">เลือกเมนูเพื่อเริ่มต้น</p><div class="d-grid gap-3"><button id="start-new-btn" class="btn btn-primary btn-lg"><i class="bi bi-stars"></i> เริ่มทำแบบทดสอบ</button><button id="manage-btn" class="btn btn-outline-secondary"><i class="bi bi-gear-fill"></i> จัดการข้อมูล</button><button id="dashboard-btn" class="btn btn-outline-info"><i class="bi bi-graph-up"></i> ดูสถิติ</button></div></div></div></div></template>
+    <template id="template-test"><div class="card"><div class="card-header bg-primary text-white d-flex justify-content-between align-items-center"><h3 id="session-title" class="fs-5 mb-0"></h3><div id="session-stats"><span id="due-count-badge" class="badge bg-light text-dark"></span></div></div><div class="card-body text-center" id="quiz-area"></div></div></template>
+    <template id="template-manage"><button id="back-to-menu-btn" class="btn btn-secondary mb-3 w-100"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button><div class="card mb-4"><div class="card-header bg-info text-white"><h5><i class="bi bi-plus-circle-fill"></i> เพิ่มคำศัพท์ใหม่</h5></div><div class="card-body"><form id="add-form"><div class="mb-3"><label for="new-question" class="form-label">คำศัพท์ภาษาอังกฤษ</label><input type="text" id="new-question" class="form-control" required></div><div class="mb-3"><label for="new-answer" class="form-label">คำแปลภาษาไทย</label><input type="text" id="new-answer" class="form-control" required></div><div class="mb-3"><label for="new-category" class="form-label">หมวดหมู่</label><input type="text" id="new-category" class="form-control" placeholder="เช่น วิศวกรรมไฟฟ้า" required></div><button type="submit" class="btn btn-success w-100">เพิ่มคำศัพท์</button></form></div></div><div class="card"><div class="card-header bg-secondary text-white"><h5><i class="bi bi-card-list"></i> คลังคำศัพท์ทั้งหมด</h5></div><div class="card-body"><div id="questions-list" class="table-responsive"></div></div></div></template>
+    <template id="template-dashboard"><button id="back-to-menu-btn" class="btn btn-secondary mb-3 w-100"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button><div class="card mb-4"><div class="card-header bg-primary text-white"><h5><i class="bi bi-speedometer2"></i> แดชบอร์ดสรุปผล</h5></div><div class="card-body"><div class="row text-center mb-4"><div class="col"><h4 class="mb-0 text-primary" id="total-questions">0</h4><small class="text-muted">คำศัพท์ทั้งหมด</small></div><div class="col"><h4 class="mb-0 text-warning" id="due-for-review">0</h4><small class="text-muted">ถึงรอบทวน</small></div></div><hr><h6 class="mb-3">สัดส่วนคำศัพท์ตามหมวดหมู่</h6><div style="position: relative; height:300px; width:100%"><canvas id="categoryChart"></canvas></div><hr><h6 class="mb-3">ผลการตอบถูก/ผิด ย้อนหลัง 7 วัน</h6><div style="position: relative; height:300px; width:100%"><canvas id="dailyResultChart"></canvas></div></div></div></template>
 
-    <div class="modal fade" id="startSessionModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">เริ่มรอบทบทวนใหม่</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="category-select" class="form-label">เลือกหมวดหมู่</label>
-                        <select id="category-select" class="form-select">
-                            <option value="all">ทบทวนทั้งหมด</option>
-                            <option value="due">เฉพาะที่ถึงรอบทวน</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="mode-select" class="form-label">เลือกรูปแบบการทบทวน</label>
-                        <select id="mode-select" class="form-select">
-                            <option value="multiple_choice">ตัวเลือก (อังกฤษ -> ไทย)</option>
-                            <option value="reverse">ตัวเลือก (ไทย -> อังกฤษ)</option>
-                            <option value="typing">พิมพ์ตอบ (อังกฤษ -> ไทย)</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                    <button type="button" id="confirm-start-btn" class="btn btn-primary">เริ่มต้น</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <script type="module">
+        // Import functions from Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, collection, doc, getDocs, addDoc, deleteDoc, updateDoc, Timestamp, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    <template id="template-test">
-        <div class="card">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                <h3 id="session-title" class="fs-5 mb-0"></h3>
-                <div id="session-stats">
-                    <span id="due-count-badge" class="badge bg-light text-dark" title="คำถามในกองหลัก"></span>
-                    <span id="review-pile-badge" class="badge bg-warning text-dark" title="คำถามที่ต้องทวนซ้ำ"></span>
-                </div>
-            </div>
-            <div class="card-body text-center" id="quiz-area"></div>
-        </div>
-    </template>
+        // Your web app's Firebase configuration
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+        apiKey: "AIzaSyDMmUxdlbAsjXdVr8JXfFV6zqVL2am9bwM",
+        authDomain: "spaced-repetition-system-7ce8a.firebaseapp.com",
+        projectId: "spaced-repetition-system-7ce8a",
+        storageBucket: "spaced-repetition-system-7ce8a.firebasestorage.app",
+        messagingSenderId: "668763983651",
+        appId: "1:668763983651:web:3cc3df1c61d0165c764696",
+        measurementId: "G-MPVL49Y2T4"
+    };
 
-    <template id="template-manage">
-        <button id="back-to-menu-btn" class="btn btn-secondary mb-3 w-100"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button>
-        <div class="card mb-4">
-            <div class="card-header bg-info text-white"><h5><i class="bi bi-plus-circle-fill"></i> เพิ่มคำศัพท์ใหม่</h5></div>
-            <div class="card-body">
-                <form id="add-form">
-                    <div class="mb-3"><label for="new-question" class="form-label">คำศัพท์ภาษาอังกฤษ</label><input type="text" id="new-question" class="form-control" required></div>
-                    <div class="mb-3"><label for="new-answer" class="form-label">คำแปลภาษาไทย</label><input type="text" id="new-answer" class="form-control" required></div>
-                    <div class="mb-3"><label for="new-category" class="form-label">หมวดหมู่ (ไม่บังคับ)</label><input type="text" id="new-category" class="form-control" placeholder="เช่น บทที่ 1, คำกริยา"></div>
-                    <button type="submit" class="btn btn-success w-100">เพิ่มคำศัพท์</button>
-                </form>
-            </div>
-        </div>
-        <div class="card mb-4">
-            <div class="card-header bg-success text-white"><h5><i class="bi bi-file-earmark-spreadsheet-fill"></i> ส่งออกและรีเซ็ต</h5></div>
-            <div class="card-body">
-                <p>ส่งออกประวัติการตอบทั้งหมดเป็นไฟล์ CSV</p>
-                <button id="export-results-btn" class="btn btn-primary w-100 mb-3">ส่งออกผลลัพธ์ (.csv)</button>
-                <hr>
-                <p>รีเซ็ตความคืบหน้าการทบทวนทั้งหมด (คำศัพท์จะไม่ถูกลบ)</p>
-                <button id="reset-srs-btn" class="btn btn-danger w-100">รีเซ็ตความคืบหน้า</button>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-header bg-secondary text-white"><h5><i class="bi bi-card-list"></i> คลังคำศัพท์ทั้งหมด</h5></div>
-            <div class="card-body"><div id="questions-list" class="table-responsive"></div></div>
-        </div>
-    </template>
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
-    <template id="template-dashboard">
-        <button id="back-to-menu-btn" class="btn btn-secondary mb-3 w-100"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button>
-        <div class="card mb-4">
-            <div class="card-header bg-primary text-white"><h5><i class="bi bi-speedometer2"></i> แดชบอร์ดสรุปผล</h5></div>
-            <div class="card-body">
-                <div class="row text-center mb-4">
-                    <div class="col">
-                        <h4 class="mb-0 text-primary" id="total-questions">0</h4>
-                        <small class="text-muted">คำศัพท์ทั้งหมด</small>
-                    </div>
-                    <div class="col">
-                        <h4 class="mb-0 text-warning" id="due-for-review">0</h4>
-                        <small class="text-muted">ถึงรอบทวน</small>
-                    </div>
-                </div>
-                <hr>
-                <h6 class="mb-3">สัดส่วนคำศัพท์ตามหมวดหมู่</h6>
-                <div class="chart-container" style="position: relative; height:300px; width:100%">
-                    <canvas id="categoryChart"></canvas>
-                </div>
-                <hr>
-                <h6 class="mb-3">ผลการตอบถูก/ผิด ย้อนหลัง 7 วัน</h6>
-                <div class="chart-container" style="position: relative; height:300px; width:100%">
-                    <canvas id="dailyResultChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </template>
-
-
-    <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Elements ---
+            const loginSection = document.getElementById('login-section');
+            const registerSection = document.getElementById('register-section');
             const appRoot = document.getElementById('app-root');
-            
+            const loginBtn = document.getElementById('login-btn');
+            const loginEmailInput = document.getElementById('login-email');
+            const loginPasswordInput = document.getElementById('login-password');
+            const loginAlert = document.getElementById('login-alert');
+            const goToRegisterLink = document.getElementById('go-to-register');
+            const registerBtn = document.getElementById('register-btn');
+            const registerEmailInput = document.getElementById('register-email');
+            const registerPasswordInput = document.getElementById('register-password');
+            const registerAlert = document.getElementById('register-alert');
+            const goToLoginLink = document.getElementById('go-to-login');
+
+            let currentUser = null;
+            let allUserQuestions = [];
             const SRS_LEVELS = [1, 3, 7, 14, 30, 60, 120];
+            let QuizSession = {};
+            let historyModalInstance = null, startSessionModalInstance = null;
+            let categoryChartInstance = null, dailyResultChartInstance = null;
             
-            let QuizSession = {
-                dueQuestions: [], reviewPile: [], answeredThisSession: [], 
-                currentQuestion: null, isSessionActive: false, isPracticeMode: false, 
-                allQuestionsCache: [], mode: 'multiple_choice', category: 'all'
+            // --- UI View Functions ---
+            const showApp = () => { loginSection.classList.add('hidden'); registerSection.classList.add('hidden'); appRoot.classList.remove('hidden'); };
+            const showLoginScreen = () => { registerSection.classList.add('hidden'); appRoot.classList.add('hidden'); loginSection.classList.remove('hidden'); };
+            const showRegisterScreen = () => { loginSection.classList.add('hidden'); appRoot.classList.add('hidden'); registerSection.classList.remove('hidden'); };
+            const showLoginError = (message) => { loginAlert.textContent = message; loginAlert.classList.remove('hidden'); };
+            const showRegisterError = (message) => { registerAlert.textContent = message; registerAlert.classList.remove('hidden'); };
+            const showAlert = (msg, type = 'success') => {
+                const c = document.getElementById('alert-container');
+                const el = document.createElement('div');
+                el.className = `alert alert-${type} alert-dismissible fade show`;
+                el.innerHTML = `${msg}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+                c.appendChild(el);
+                setTimeout(() => el.remove(), 3000);
             };
-            
-            let historyModalInstance = null;
-            let startSessionModalInstance = null;
-            let categoryChartInstance = null;
-            let dailyResultChartInstance = null;
 
-            // --- STORAGE MODULE ---
-            const Storage = {
-                getQuestions: () => {
-                    const data = localStorage.getItem('quizQuestions_srs_v3');
-                    if (!data) {
-                        const initialQuestions = [
-                            // หมวดหมู่: วิศวกรรมไฟฟ้า (เดิม)
-                            { id: 1, question: 'Voltage', answer: 'แรงดันไฟฟ้า', category: 'วิศวกรรมไฟฟ้า' },
-                            { id: 2, question: 'Current', answer: 'กระแสไฟฟ้า', category: 'วิศวกรรมไฟฟ้า' },
-                            { id: 3, question: 'Resistance', answer: 'ความต้านทาน', category: 'วิศวกรรมไฟฟ้า' },
-                            { id: 4, question: 'Capacitor', answer: 'ตัวเก็บประจุ', category: 'วิศวกรรมไฟฟ้า' },
-                            { id: 5, question: 'Transistor', answer: 'ทรานซิสเตอร์', category: 'วิศวกรรมไฟฟ้า' },
-                            { id: 6, question: 'Semiconductor', answer: 'สารกึ่งตัวนำ', category: 'วิศวกรรมไฟฟ้า' },
-                            { id: 7, question: 'Generator', answer: 'เครื่องกำเนิดไฟฟ้า', category: 'วิศวกรรมไฟฟ้า' },
-                            
-                            // หมวดหมู่: วิศวกรรมเครื่องกล
-                            { id: 8, question: 'Torque', answer: 'แรงบิด', category: 'วิศวกรรมเครื่องกล' },
-                            { id: 9, question: 'Velocity', answer: 'ความเร็ว', category: 'วิศวกรรมเครื่องกล' },
-                            { id: 10, question: 'Acceleration', answer: 'ความเร่ง', category: 'วิศวกรรมเครื่องกล' },
-                            { id: 11, question: 'Friction', answer: 'ความเสียดทาน', category: 'วิศวกรรมเครื่องกล' },
-                            { id: 12, question: 'Thermodynamics', answer: 'อุณหพลศาสตร์', category: 'วิศวกรรมเครื่องกล' },
-                            { id: 13, question: 'Viscosity', answer: 'ความหนืด', category: 'วิศวกรรมเครื่องกล' },
-                            { id: 14, question: 'Turbine', answer: 'กังหัน', category: 'วิศวกรรมเครื่องกล' },
-
-                            // หมวดหมู่: วิศวกรรมโยธา
-                            { id: 15, question: 'Foundation', answer: 'ฐานราก', category: 'วิศวกรรมโยธา' },
-                            { id: 16, question: 'Beam', answer: 'คาน', category: 'วิศวกรรมโยธา' },
-                            { id: 17, question: 'Column', answer: 'เสา', category: 'วิศวกรรมโยธา' },
-                            { id: 18, question: 'Tension', answer: 'แรงดึง', category: 'วิศวกรรมโยธา' },
-                            { id: 19, question: 'Compression', answer: 'แรงอัด', category: 'วิศวกรรมโยธา' },
-                            { id: 20, question: 'Concrete', answer: 'คอนกรีต', category: 'วิศวกรรมโยธา' },
-                            { id: 21, question: 'Infrastructure', answer: 'โครงสร้างพื้นฐาน', category: 'วิศวกรรมโยธา' },
-
-                            // หมวดหมู่: วิศวกรรมเคมี
-                            { id: 22, question: 'Catalyst', answer: 'ตัวเร่งปฏิกิริยา', category: 'วิศวกรรมเคมี' },
-                            { id: 23, question: 'Distillation', answer: 'การกลั่นลำดับส่วน', category: 'วิศวกรรมเคมี' },
-                            { id: 24, question: 'Molecule', answer: 'โมเลกุล', category: 'วิศวกรรมเคมี' },
-                            { id: 25, question: 'Polymer', answer: 'พอลิเมอร์', category: 'วิศวกรรมเคมี' },
-                            { id: 26, question: 'Reaction', answer: 'ปฏิกิริยา', category: 'วิศวกรรมเคมี' },
-                            { id: 27, question: 'Solvent', answer: 'ตัวทำละลาย', category: 'วิศวกรรมเคมี' },
-
-                            // หมวดหมู่: วิศวกรรมคอมพิวเตอร์
-                            { id: 28, question: 'Algorithm', answer: 'อัลกอริทึม', category: 'วิศวกรรมคอมพิวเตอร์' },
-                            { id: 29, question: 'Database', answer: 'ฐานข้อมูล', category: 'วิศวกรรมคอมพิวเตอร์' },
-                            { id: 30, question: 'Firewall', answer: 'ไฟร์วอลล์', category: 'วิศวกรรมคอมพิวเตอร์' },
-                            { id: 31, question: 'Encryption', answer: 'การเข้ารหัส', category: 'วิศวกรรมคอมพิวเตอร์' },
-                            { id: 32, question: 'Software', answer: 'ซอฟต์แวร์', category: 'วิศวกรรมคอมพิวเตอร์' },
-                            { id: 33, question: 'Hardware', answer: 'ฮาร์ดแวร์', category: 'วิศวกรรมคอมพิวเตอร์' },
-                            { id: 34, question: 'Network', answer: 'เครือข่าย', category: 'วิศวกรรมคอมพิวเตอร์' },
-                            { id: 35, question: 'Compiler', answer: 'คอมไพเลอร์', category: 'วิศวกรรมคอมพิวเตอร์' }
-                        ];
-                        const processed = initialQuestions.map(q => ({ ...q, srsLevel: 0, nextReviewDate: Date.now() }));
-                        localStorage.setItem('quizQuestions_srs_v3', JSON.stringify(processed));
-                        return processed;
-                    }
-                    let questions = JSON.parse(data);
-                    let needsSave = false;
-                    questions.forEach(q => { 
-                        if (q.srsLevel === undefined) { q.srsLevel = 0; q.nextReviewDate = Date.now(); needsSave = true; }
-                        if (q.category === undefined) { q.category = 'ไม่มีหมวดหมู่'; needsSave = true; }
-                    });
-                    if (needsSave) Storage.saveQuestions(questions);
-                    return questions;
-                },
-                saveQuestions: (q) => localStorage.setItem('quizQuestions_srs_v3', JSON.stringify(q)),
-                addQuestion: (q, a, c) => { 
-                    const qs = Storage.getQuestions(); 
-                    const id = qs.length > 0 ? Math.max(...qs.map(i => i.id)) + 1 : 1; 
-                    qs.push({ id, question: q, answer: a, category: c || 'ไม่มีหมวดหมู่', srsLevel: 0, nextReviewDate: Date.now() }); 
-                    Storage.saveQuestions(qs); 
-                },
-                deleteQuestion: (id) => { let qs = Storage.getQuestions(); qs = qs.filter(q => q.id !== id); Storage.saveQuestions(qs); },
-                updateQuestionSRS: (id, correct) => { 
-                    const qs = Storage.getQuestions(); 
-                    const q = qs.find(i => i.id === id); 
-                    if (!q) return; 
-                    if (correct) { q.srsLevel++; } else { q.srsLevel = Math.max(0, q.srsLevel - 1); }
-                    const days = SRS_LEVELS[Math.min(q.srsLevel, SRS_LEVELS.length - 1)] || 1; 
-                    const now = new Date(); 
-                    now.setHours(0, 0, 0, 0); 
-                    q.nextReviewDate = now.setDate(now.getDate() + days); 
-                    Storage.saveQuestions(qs); 
-                },
-                resetAllSRS: () => { const qs = Storage.getQuestions(); qs.forEach(q => { q.srsLevel = 0; q.nextReviewDate = Date.now(); }); Storage.saveQuestions(qs); },
-                getResults: () => JSON.parse(localStorage.getItem('quizResults_srs')) || [],
-                addResult: (r) => { const rs = Storage.getResults(); rs.push(r); localStorage.setItem('quizResults_srs', JSON.stringify(rs)); },
-                saveSession: (session) => localStorage.setItem('quizSession_srs', JSON.stringify(session)),
-                loadSession: () => JSON.parse(localStorage.getItem('quizSession_srs')),
-                clearSession: () => localStorage.removeItem('quizSession_srs'),
-                getCategories: () => {
-                    const questions = Storage.getQuestions();
-                    const categories = new Set(questions.map(q => q.category));
-                    return Array.from(categories);
-                }
-            };
-            
-            // --- SPEECH SERVICE MODULE ---
+            // --- Speech Service ---
             const SpeechService = {
                 recognition: null, isListening: false,
                 init: () => {
-                    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-                    if (SR) {
-                        SpeechService.recognition = new SR();
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    if (SpeechRecognition) {
+                        SpeechService.recognition = new SpeechRecognition();
                         SpeechService.recognition.continuous = false;
                         SpeechService.recognition.interimResults = false;
-                        SpeechService.recognition.maxAlternatives = 1;
-
-                        SpeechService.recognition.onresult = (e) => {
-                            const transcript = e.results[0][0].transcript.trim();
-                            UI.showAlert(`คุณพูดว่า: "${transcript}"`, 'info');
+                        SpeechService.recognition.lang = 'en-US';
+                        SpeechService.recognition.onresult = (event) => {
+                            const transcript = event.results[0][0].transcript;
+                            showAlert(`คุณพูดว่า: "${transcript}"`, 'info');
                             App.handleAnswer(transcript);
                         };
-                        SpeechService.recognition.onerror = (e) => { UI.showAlert(`เกิดข้อผิดพลาดในการรับเสียง: ${e.error}`, 'danger'); };
-                    } else { console.warn("เบราว์เซอร์นี้ไม่รองรับระบบการรู้จำเสียงพูด"); }
+                        SpeechService.recognition.onerror = (event) => { showAlert(`เกิดข้อผิดพลาด: ${event.error}`, 'danger'); };
+                    }
                 },
-                speak: (text, lang = 'en-US') => { 
-                    if ('speechSynthesis' in window) { 
-                        window.speechSynthesis.cancel(); 
-                        const u = new SpeechSynthesisUtterance(text); 
-                        u.lang = lang; u.rate = 0.9; 
-                        window.speechSynthesis.speak(u); 
-                    } else { console.warn("เบราว์เซอร์นี้ไม่รองรับระบบการอ่านออกเสียง"); } 
+                speak: (text, lang = 'en-US') => {
+                    if ('speechSynthesis' in window) {
+                        window.speechSynthesis.cancel();
+                        const utterance = new SpeechSynthesisUtterance(text);
+                        utterance.lang = lang;
+                        utterance.rate = 0.9;
+                        window.speechSynthesis.speak(utterance);
+                    }
                 },
                 toggleListen: (btn, lang) => {
-                    if (!SpeechService.recognition) { UI.showAlert('เบราว์เซอร์ของคุณไม่รองรับการพูดเพื่อพิมพ์', 'danger'); return; }
+                    if (!SpeechService.recognition) { showAlert('เบราว์เซอร์ไม่รองรับการพูด', 'warning'); return; }
                     if (SpeechService.isListening) { SpeechService.recognition.stop(); return; }
                     SpeechService.recognition.lang = lang;
                     SpeechService.recognition.start();
-                    SpeechService.recognition.onstart = () => { SpeechService.isListening = true; btn.classList.add('mic-listening'); btn.title = "กำลังฟัง..."; };
-                    SpeechService.recognition.onend = () => { SpeechService.isListening = false; btn.classList.remove('mic-listening'); btn.title = "คลิกเพื่อพูดคำตอบ"; };
+                    SpeechService.recognition.onstart = () => { SpeechService.isListening = true; btn.classList.add('mic-listening'); };
+                    SpeechService.recognition.onend = () => { SpeechService.isListening = false; btn.classList.remove('mic-listening'); };
                 }
             };
 
-            // --- UI MODULE ---
-            const UI = {
-                showAlert: (msg, type = 'success') => { const c = document.getElementById('alert-container'); const el = document.createElement('div'); el.className = `alert alert-${type} alert-dismissible fade show`; el.innerHTML = `${msg}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`; c.appendChild(el); setTimeout(() => el.remove(), 3000); },
-                renderMainMenu: () => {
-                    const savedSession = Storage.loadSession();
-                    const hasActiveSession = savedSession && savedSession.isSessionActive;
-                    appRoot.innerHTML = `
-                        <div class="card text-center p-4">
-                            <h1 class="text-primary mb-3">เว็บทบทวนคำศัพท์</h1>
-                            <p class="text-muted mb-4">เลือกเมนูเพื่อเริ่มต้น</p>
-                            <div class="d-grid gap-3">
-                                ${hasActiveSession ? `<button id="resume-btn" class="btn btn-warning btn-lg"><i class="bi bi-play-circle-fill"></i> ทำต่อจากครั้งที่แล้ว</button>` : ''}
-                                <button id="start-new-btn" class="btn btn-primary btn-lg"><i class="bi bi-stars"></i> เริ่มทำแบบทดสอบ</button>
-                                <button id="manage-btn" class="btn btn-outline-secondary"><i class="bi bi-gear-fill"></i> จัดการข้อมูล</button>
-                                <button id="dashboard-btn" class="btn btn-outline-info"><i class="bi bi-graph-up"></i> ดูสถิติ</button>
-                            </div>
-                        </div>
-                    `;
-                    if (hasActiveSession) { document.getElementById('resume-btn').addEventListener('click', () => App.startOrResumeSession(true)); }
-                    document.getElementById('start-new-btn').addEventListener('click', () => {
-                        if (hasActiveSession && !confirm("การเริ่มรอบใหม่จะลบข้อมูลที่ทำค้างไว้ ยืนยันหรือไม่?")) { return; }
-                        UI.showStartSessionModal();
-                    });
-                    document.getElementById('manage-btn').addEventListener('click', () => UI.renderManagePage());
-                    document.getElementById('dashboard-btn').addEventListener('click', () => UI.renderDashboardPage());
-                },
-                showStartSessionModal: () => {
-                    const categorySelect = document.getElementById('category-select');
-                    const categories = Storage.getCategories();
-                    while (categorySelect.options.length > 2) {
-                        categorySelect.remove(2);
-                    }
-                    categories.forEach(cat => {
-                        const option = document.createElement('option');
-                        option.value = cat;
-                        option.textContent = cat;
-                        categorySelect.appendChild(option);
-                    });
-
-                    if (!startSessionModalInstance) {
-                         startSessionModalInstance = new bootstrap.Modal(document.getElementById('startSessionModal'));
-                    }
-                    startSessionModalInstance.show();
-
-                    document.getElementById('confirm-start-btn').onclick = () => {
-                        const category = document.getElementById('category-select').value;
-                        const mode = document.getElementById('mode-select').value;
-                        startSessionModalInstance.hide();
-                        App.startOrResumeSession(false, { category, mode });
-                    };
-                },
-                renderTestPage: () => { appRoot.innerHTML = document.getElementById('template-test').innerHTML; },
-                renderManagePage: () => {
-                    appRoot.innerHTML = document.getElementById('template-manage').innerHTML;
-                    document.getElementById('back-to-menu-btn').addEventListener('click', UI.renderMainMenu);
-                    
-                    const questions = Storage.getQuestions();
-                    const listContainer = document.getElementById('questions-list');
-                    if (questions.length === 0) {
-                        listContainer.innerHTML = '<p class="text-center text-muted">ยังไม่มีคำศัพท์</p>';
-                    } else {
-                        const table = document.createElement('table');
-                        table.className = 'table table-striped table-hover';
-                        table.innerHTML = `<thead><tr><th>คำศัพท์ / หมวดหมู่</th><th>สถานะ</th><th class="text-end">จัดการ</th></tr></thead><tbody>${questions.map(q => {
-                            const nr = new Date(q.nextReviewDate); 
-                            const now = new Date(); now.setHours(0,0,0,0); 
-                            const due = nr <= now; 
-                            const s = due ? `<span class="badge bg-warning">ถึงรอบทวน</span>` : `<span class="badge bg-secondary">อีก ${Math.ceil((nr - now) / 864e5)} วัน</span>`;
-                            return `<tr>
-                                <td>${q.question}<br><small class="text-muted">${q.answer}</small><br><small class="text-info">${q.category}</small></td>
-                                <td><span class="badge bg-info">Lv. ${q.srsLevel}</span> ${s}</td>
-                                <td class="text-end"><button class="btn btn-sm btn-danger" data-id="${q.id}">ลบ</button></td>
-                            </tr>`;
-                        }).join('')}</tbody>`;
-                        listContainer.innerHTML = '';
-                        listContainer.appendChild(table);
-                    }
-                    
-                    document.getElementById('add-form').addEventListener('submit', e => { 
-                        e.preventDefault(); 
-                        const nq = document.getElementById('new-question');
-                        const na = document.getElementById('new-answer');
-                        const nc = document.getElementById('new-category');
-                        if (nq.value.trim() && na.value.trim()) { 
-                            Storage.addQuestion(nq.value, na.value, nc.value); 
-                            UI.showAlert('เพิ่มคำศัพท์สำเร็จ!'); 
-                            UI.renderManagePage(); 
-                        } 
-                    });
-                    listContainer.querySelectorAll('.btn-danger').forEach(b => { 
-                        b.addEventListener('click', e => { 
-                            if (confirm('ยืนยันการลบคำศัพท์นี้?')) { 
-                                Storage.deleteQuestion(parseInt(e.target.dataset.id)); 
-                                UI.showAlert('ลบคำศัพท์แล้ว', 'warning'); 
-                                UI.renderManagePage(); 
-                            } 
-                        }); 
-                    });
-                    document.getElementById('export-results-btn').addEventListener('click', App.exportResultsToCSV);
-                    document.getElementById('reset-srs-btn').addEventListener('click', () => { 
-                        if (confirm('ยืนยันการรีเซ็ตความคืบหน้าทั้งหมด?')) { 
-                            Storage.resetAllSRS(); 
-                            UI.showAlert('รีเซ็ตความคืบหน้าทั้งหมดแล้ว', 'success'); 
-                            UI.renderManagePage(); 
-                        } 
-                    });
-                },
-                renderDashboardPage: () => {
-                    appRoot.innerHTML = document.getElementById('template-dashboard').innerHTML;
-                    document.getElementById('back-to-menu-btn').addEventListener('click', UI.renderMainMenu);
-                    App.loadDashboardData();
-                },
-                updateSessionStats: () => {
-                    const titleEl = document.getElementById('session-title');
-                    if(titleEl) {
-                        let modeText = '';
-                        switch(QuizSession.mode) {
-                            case 'typing': modeText = 'โหมดพิมพ์ตอบ'; break;
-                            case 'reverse': modeText = 'โหมดสลับด้าน'; break;
-                            default: modeText = 'โหมดตัวเลือก';
-                        }
-                        titleEl.innerHTML = `<i class="bi bi-patch-question-fill"></i> ${modeText} (${QuizSession.category})`;
-                    }
-                    const dueBadge = document.getElementById('due-count-badge');
-                    const reviewBadge = document.getElementById('review-pile-badge');
-                    if(dueBadge) dueBadge.textContent = `กองหลัก: ${QuizSession.dueQuestions.length}`;
-                    if(reviewBadge) reviewBadge.textContent = `ทวนซ้ำ: ${QuizSession.reviewPile.length}`;
-                },
-                displayQuestion: (q) => {
-                    const qa = document.getElementById('quiz-area');
-                    if (!qa) return;
-
-                    let questionHTML = '';
-                    const isReverse = QuizSession.mode === 'reverse';
-                    const mainText = isReverse ? q.answer : q.question;
-                    const subText = isReverse ? 'จงตอบเป็นภาษาอังกฤษ' : 'จงแปลคำว่า';
-                    const speechLang = isReverse ? 'th-TH' : 'en-US';
-                    const micLang = isReverse ? 'en-US' : 'th-TH';
-
-                    questionHTML = `
-                        <div class="d-flex justify-content-between mb-2">
-                            <button class="btn btn-sm btn-outline-secondary" id="back-to-menu-quiz-btn"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button>
-                            <button class="btn btn-sm btn-outline-info" id="history-btn"><i class="bi bi-clock-history"></i> ดูข้อที่ตอบแล้ว</button>
-                        </div>
-                        <p class="fs-4 d-flex justify-content-center align-items-center gap-2">${subText} "<strong>${mainText}</strong>"<button class="btn btn-sm btn-outline-secondary" id="speak-btn" title="ฟังเสียง"><i class="bi bi-volume-up-fill"></i></button></p>
-                    `;
-
-                    if (QuizSession.mode === 'typing') {
-                        questionHTML += `
-                            <form id="typing-form">
-                                <div class="input-group my-3">
-                                     <input type="text" id="typing-answer" class="form-control" placeholder="พิมพ์คำตอบที่นี่..." autocomplete="off" autofocus>
-                                     <button class="btn btn-primary" type="submit">ส่งคำตอบ</button>
-                                </div>
-                            </form>
-                        `;
-                    } else {
-                         const choices = App.generateChoices(q, QuizSession.allQuestionsCache, isReverse);
-                         questionHTML += `
-                            <div id="choices-area" class="d-grid gap-2 my-3">
-                                ${choices.map(choice => `<button class="btn btn-outline-primary choice-btn">${choice}</button>`).join('')}
-                            </div>
-                         `;
-                    }
-
-                     questionHTML += `
-                        <div class="d-flex justify-content-center align-items-center gap-3">
-                            <button class="btn btn-lg btn-secondary rounded-circle" id="mic-btn" title="พูดคำตอบ"><i class="bi bi-mic-fill"></i></button>
-                            <button class="btn btn-outline-warning" id="skip-btn">ข้ามไปก่อน</button>
-                        </div>`;
-                    
-                    qa.innerHTML = questionHTML;
-
-                    document.getElementById('back-to-menu-quiz-btn').addEventListener('click', UI.renderMainMenu);
-                    document.getElementById('history-btn').addEventListener('click', UI.showHistory);
-                    
-                    SpeechService.speak(mainText, speechLang);
-                    document.getElementById('speak-btn').addEventListener('click', () => SpeechService.speak(mainText, speechLang));
-                    
-                    if (QuizSession.mode === 'typing') {
-                        document.getElementById('typing-form').addEventListener('submit', (e) => {
-                            e.preventDefault();
-                            const answerInput = document.getElementById('typing-answer');
-                            App.handleAnswer(answerInput.value);
-                        });
-                    } else {
-                        document.querySelectorAll('.choice-btn').forEach(btn => {
-                            btn.addEventListener('click', () => App.handleAnswer(btn.textContent));
-                        });
-                    }
-                    
-                    const micBtn = document.getElementById('mic-btn');
-                    if (SpeechService.recognition) { micBtn.addEventListener('click', () => SpeechService.toggleListen(micBtn, micLang)); } 
-                    else { micBtn.disabled = true; micBtn.title = "ไม่รองรับ"; }
-                    
-                    document.getElementById('skip-btn').addEventListener('click', App.handleSkip);
-                },
-                showSessionComplete: () => {
-                    const quizArea = document.getElementById('quiz-area');
-                    if (!quizArea) return;
-                    quizArea.innerHTML = `
-                        <div class="alert alert-success text-center">
-                            <h3>ยอดเยี่ยม!</h3><p>คุณทบทวนคำศัพท์สำหรับรอบนี้ทั้งหมดแล้ว</p>
-                            <button id="back-to-menu-btn-complete" class="btn btn-primary mt-2">กลับไปเมนูหลัก</button>
-                        </div>`;
-                    document.getElementById('back-to-menu-btn-complete').addEventListener('click', UI.renderMainMenu);
-                },
-                showHistory: () => {
-                    const body = document.getElementById('history-modal-body');
-                    if (QuizSession.answeredThisSession.length === 0) { 
-                        body.innerHTML = '<p class="text-center text-muted">ยังไม่มีข้อที่ตอบในรอบนี้</p>';
-                    } else {
-                        const list = QuizSession.answeredThisSession.map(item => `
-                            <li class="list-group-item">
-                                <div class="fw-bold">${item.question.question} -> ${item.question.answer}</div>
-                                <div class="d-flex justify-content-between">
-                                    <small class="text-muted">คุณตอบ: ${item.userAnswer || '-'}</small>
-                                    ${item.isCorrect ? '<span class="badge bg-success">ถูกต้อง</span>' : '<span class="badge bg-danger">ผิด</span>'}
-                                </div>
-                            </li>`).join('');
-                        body.innerHTML = `<ul class="list-group list-group-flush">${list}</ul>`;
-                    }
-                    if (!historyModalInstance) { historyModalInstance = new bootstrap.Modal(document.getElementById('historyModal')); }
-                    historyModalInstance.show();
-                }
+            // --- Firebase Service ---
+            const FirebaseService = {
+                getQuestions: async (userId) => { const qCollection = collection(db, 'users', userId, 'words'); const snapshot = await getDocs(qCollection); return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); },
+                addQuestion: (userId, data) => addDoc(collection(db, 'users', userId, 'words'), data),
+                deleteQuestion: (userId, wordId) => deleteDoc(doc(db, 'users',userId, 'words', wordId)),
+                updateQuestion: (userId, wordId, data) => updateDoc(doc(db, 'users', userId, 'words', wordId), data),
+                addResult: (userId, data) => addDoc(collection(db, 'users', userId, 'results'), data),
+                getResults: async (userId) => { const rCollection = collection(db, 'users', userId, 'results'); const snapshot = await getDocs(rCollection); return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); }
             };
-
-            // --- APP LOGIC MODULE ---
-            const App = {
-                init: () => { SpeechService.init(); UI.renderMainMenu(); },
-                startOrResumeSession: (resume = false, options = { category: 'all', mode: 'multiple_choice' }) => {
-                    if (resume) {
-                        const savedSession = Storage.loadSession();
-                        if (savedSession && savedSession.isSessionActive) { QuizSession = savedSession; } 
-                        else { resume = false; }
+            
+            // --- Auth State & Event Listeners ---
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    currentUser = user;
+                    allUserQuestions = await FirebaseService.getQuestions(currentUser.uid);
+                    // --- FIXED: Full initial question set (35 words) ---
+                    if (allUserQuestions.length === 0) {
+                        const initialQuestions = [ { question: 'Voltage', answer: 'แรงดันไฟฟ้า', category: 'วิศวกรรมไฟฟ้า' }, { question: 'Current', answer: 'กระแสไฟฟ้า', category: 'วิศวกรรมไฟฟ้า' }, { question: 'Resistance', answer: 'ความต้านทาน', category: 'วิศวกรรมไฟฟ้า' }, { question: 'Capacitor', answer: 'ตัวเก็บประจุ', category: 'วิศวกรรมไฟฟ้า' }, { question: 'Transistor', answer: 'ทรานซิสเตอร์', category: 'วิศวกรรมไฟฟ้า' }, { question: 'Semiconductor', answer: 'สารกึ่งตัวนำ', category: 'วิศวกรรมไฟฟ้า' }, { question: 'Generator', answer: 'เครื่องกำเนิดไฟฟ้า', category: 'วิศวกรรมไฟฟ้า' }, { question: 'Torque', answer: 'แรงบิด', category: 'วิศวกรรมเครื่องกล' }, { question: 'Velocity', answer: 'ความเร็ว', category: 'วิศวกรรมเครื่องกล' }, { question: 'Acceleration', answer: 'ความเร่ง', category: 'วิศวกรรมเครื่องกล' }, { question: 'Friction', answer: 'ความเสียดทาน', category: 'วิศวกรรมเครื่องกล' }, { question: 'Thermodynamics', answer: 'อุณหพลศาสตร์', category: 'วิศวกรรมเครื่องกล' }, { question: 'Viscosity', answer: 'ความหนืด', category: 'วิศวกรรมเครื่องกล' }, { question: 'Turbine', answer: 'กังหัน', category: 'วิศวกรรมเครื่องกล' }, { question: 'Foundation', answer: 'ฐานราก', category: 'วิศวกรรมโยธา' }, { question: 'Beam', answer: 'คาน', category: 'วิศวกรรมโยธา' }, { question: 'Column', answer: 'เสา', category: 'วิศวกรรมโยธา' }, { question: 'Tension', answer: 'แรงดึง', category: 'วิศวกรรมโยธา' }, { question: 'Compression', answer: 'แรงอัด', category: 'วิศวกรรมโยธา' }, { question: 'Concrete', answer: 'คอนกรีต', category: 'วิศวกรรมโยธา' }, { question: 'Infrastructure', answer: 'โครงสร้างพื้นฐาน', category: 'วิศวกรรมโยธา' }, { question: 'Catalyst', answer: 'ตัวเร่งปฏิกิริยา', category: 'วิศวกรรมเคมี' }, { question: 'Distillation', answer: 'การกลั่นลำดับส่วน', category: 'วิศวกรรมเคมี' }, { question: 'Molecule', answer: 'โมเลกุล', category: 'วิศวกรรมเคมี' }, { question: 'Polymer', answer: 'พอลิเมอร์', category: 'วิศวกรรมเคมี' }, { question: 'Reaction', answer: 'ปฏิกิริยา', category: 'วิศวกรรมเคมี' }, { question: 'Solvent', answer: 'ตัวทำละลาย', category: 'วิศวกรรมเคมี' }, { question: 'Algorithm', answer: 'อัลกอริทึม', category: 'วิศวกรรมคอมพิวเตอร์' }, { question: 'Database', answer: 'ฐานข้อมูล', category: 'วิศวกรรมคอมพิวเตอร์' }, { question: 'Firewall', answer: 'ไฟร์วอลล์', category: 'วิศวกรรมคอมพิวเตอร์' }, { question: 'Encryption', answer: 'การเข้ารหัส', category: 'วิศวกรรมคอมพิวเตอร์' }, { question: 'Software', answer: 'ซอฟต์แวร์', category: 'วิศวกรรมคอมพิวเตอร์' }, { question: 'Hardware', answer: 'ฮาร์ดแวร์', category: 'วิศวกรรมคอมพิวเตอร์' }, { question: 'Network', answer: 'เครือข่าย', category: 'วิศวกรรมคอมพิวเตอร์' }, { question: 'Compiler', answer: 'คอมไพเลอร์', category: 'วิศวกรรมคอมพิวเตอร์' } ];
+                        for (const q of initialQuestions) { await FirebaseService.addQuestion(currentUser.uid, { ...q, srs_level: 0, next_review_date: Timestamp.now() }); }
+                        allUserQuestions = await FirebaseService.getQuestions(currentUser.uid);
                     }
-                    
-                    if (!resume) {
-                        let allQuestions = Storage.getQuestions();
-                        QuizSession.allQuestionsCache = allQuestions; 
-                        
-                        let filteredQuestions = allQuestions;
-                        if (options.category !== 'all' && options.category !== 'due') {
-                            filteredQuestions = allQuestions.filter(q => q.category === options.category);
-                        }
-
-                        const now = new Date(); now.setHours(0,0,0,0);
-                        
-                        if (options.category === 'due') {
-                             QuizSession.dueQuestions = allQuestions.filter(q => q.nextReviewDate <= now).sort(() => Math.random() - 0.5);
-                        } else {
-                             QuizSession.dueQuestions = filteredQuestions.sort(() => Math.random() - 0.5);
-                        }
-
-                        QuizSession.isPracticeMode = (options.category !== 'due');
-                        QuizSession.reviewPile = [];
-                        QuizSession.answeredThisSession = [];
-                        QuizSession.isSessionActive = true;
-                        QuizSession.mode = options.mode;
-                        QuizSession.category = options.category;
-                    }
-                    
-                    UI.renderTestPage();
-                    UI.updateSessionStats();
-                    App.nextQuestion();
-                },
-                nextQuestion: () => {
-                    let nextQ = QuizSession.dueQuestions.pop();
-                    
-                    if (nextQ) {
-                        QuizSession.currentQuestion = nextQ;
-                        UI.displayQuestion(nextQ);
-                    } else { App.showSessionComplete(); }
-                    
-                    UI.updateSessionStats();
-                    Storage.saveSession(QuizSession);
-                },
-                handleAnswer: (userAnswer) => {
-                    const answer = userAnswer.trim();
-                    if (!answer) return; 
-                    
-                    const q = QuizSession.currentQuestion;
-                    if (!q) return;  
-
-                    const correctAnswer = (QuizSession.mode === 'reverse') ? q.question : q.answer;
-                    const correct = answer.toLowerCase() === correctAnswer.toLowerCase();
-                    
-                    QuizSession.answeredThisSession.push({ question: q, userAnswer: answer, isCorrect: correct });
-                    Storage.addResult({ question: q.question, userAnswer: answer, correctAnswer: q.answer, isCorrect: correct, timestamp: new Date().toLocaleString('th-TH') });
-                    
-                    if (!QuizSession.isPracticeMode) {
-                        Storage.updateQuestionSRS(q.id, correct); 
-                    }
-                    
-                    if (correct) {
-                        UI.showAlert('ถูกต้อง!', 'success');
-                    } else {
-                        UI.showAlert(`ผิด! คำตอบคือ "${correctAnswer}"`, 'danger');
-                    }
-                    
-                    QuizSession.currentQuestion = null; 
-                    setTimeout(() => App.nextQuestion(), 1200);
-                },
-                generateChoices: (correctQuestion, allQuestions, isReverse = false) => {
-                    const correctAnswer = isReverse ? correctQuestion.question : correctQuestion.answer;
-                    const choices = [correctAnswer];
-                    const distractors = allQuestions
-                        .filter(q => q.id !== correctQuestion.id)
-                        .map(q => isReverse ? q.question : q.answer)
-                        .filter(ans => ans !== correctAnswer);
-                    
-                    const shuffledDistractors = [...new Set(distractors)].sort(() => 0.5 - Math.random());
-
-                    const numChoices = Math.min(3, shuffledDistractors.length);
-                    for (let i = 0; i < numChoices; i++) {
-                        choices.push(shuffledDistractors[i]);
-                    }
-                    
-                    return choices.sort(() => 0.5 - Math.random());
-                },
-                handleSkip: () => {
-                    const q = QuizSession.currentQuestion;
-                    if (!q) return;
-                    QuizSession.answeredThisSession.push({ question: q, userAnswer: '(ข้าม)', isCorrect: false });
-                    UI.showAlert(`ข้ามคำว่า "${q.question}" ไปก่อน`, 'info');
-                    QuizSession.currentQuestion = null;
-                    setTimeout(() => App.nextQuestion(), 500);
-                },
-                showSessionComplete: () => {
-                    UI.showSessionComplete();
-                    Storage.clearSession();
-                },
-                exportResultsToCSV: () => { 
-                    const results = Storage.getResults(); 
-                    if (results.length === 0) { UI.showAlert('ยังไม่มีผลการทดสอบให้ส่งออก', 'info'); return; } 
-                    const header = ['วันที่-เวลา', 'คำศัพท์', 'คำตอบของคุณ', 'คำตอบที่ถูก', 'ผลลัพธ์']; 
-                    const rows = results.map(r => [r.timestamp, r.question, r.userAnswer, r.correctAnswer, r.isCorrect ? 'ถูกต้อง' : 'ผิด']); 
-                    let csv = "data:text/csv;charset=utf-8,\uFEFF"; 
-                    csv += header.join(',') + '\n'; 
-                    rows.forEach(row => { csv += row.map(item => `"${String(item).replace(/"/g, '""')}"`).join(',') + '\n'; }); 
-                    const link = document.createElement("a"); 
-                    link.setAttribute("href", encodeURI(csv)); 
-                    link.setAttribute("download", "quiz_results.csv"); 
-                    document.body.appendChild(link); 
-                    link.click(); 
-                    link.remove(); 
-                    UI.showAlert('กำลังดาวน์โหลดไฟล์ผลลัพธ์...'); 
-                },
-                loadDashboardData: () => {
-                    const allQuestions = Storage.getQuestions();
-                    const allResults = Storage.getResults();
-
-                    document.getElementById('total-questions').textContent = allQuestions.length;
-
-                    const now = new Date();
-                    now.setHours(0, 0, 0, 0);
-                    const dueCount = allQuestions.filter(q => new Date(q.nextReviewDate) <= now).length;
-                    document.getElementById('due-for-review').textContent = dueCount;
-
-                    const categoryCounts = allQuestions.reduce((acc, q) => {
-                        acc[q.category] = (acc[q.category] || 0) + 1;
-                        return acc;
-                    }, {});
-                    const categoryLabels = Object.keys(categoryCounts);
-                    const categoryData = Object.values(categoryCounts);
-                    const categoryColors = categoryLabels.map((_, i) => `hsl(${i * 60}, 70%, 70%)`);
-
-                    if (categoryChartInstance) {
-                        categoryChartInstance.destroy();
-                    }
-                    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
-                    categoryChartInstance = new Chart(categoryCtx, {
-                        type: 'pie',
-                        data: {
-                            labels: categoryLabels,
-                            datasets: [{
-                                data: categoryData,
-                                backgroundColor: categoryColors,
-                                hoverOffset: 4
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    position: 'right',
-                                },
-                                title: {
-                                    display: false,
-                                }
-                            }
-                        }
-                    });
-
-                    const dailyResults = {};
-                    for (let i = 6; i >= 0; i--) {
-                        const d = new Date(now);
-                        d.setDate(now.getDate() - i);
-                        const dateString = d.toLocaleDateString('th-TH');
-                        dailyResults[dateString] = { correct: 0, wrong: 0 };
-                    }
-
-                    allResults.forEach(r => {
-                        const resultDateStr = r.timestamp.split(',')[0];
-                        const [day, month, year] = resultDateStr.split('/');
-                        const resultDate = new Date(`${year}-${month}-${day}`).toLocaleDateString('th-TH');
-                        
-                        if (dailyResults[resultDate]) {
-                            if (r.isCorrect) {
-                                dailyResults[resultDate].correct++;
-                            } else {
-                                dailyResults[resultDate].wrong++;
-                            }
-                        }
-                    });
-
-                    const dailyLabels = Object.keys(dailyResults);
-                    const dailyCorrectData = dailyLabels.map(date => dailyResults[date].correct);
-                    const dailyWrongData = dailyLabels.map(date => dailyResults[date].wrong);
-                    
-                    if (dailyResultChartInstance) {
-                        dailyResultChartInstance.destroy();
-                    }
-                    const dailyResultCtx = document.getElementById('dailyResultChart').getContext('2d');
-                    dailyResultChartInstance = new Chart(dailyResultCtx, {
-                        type: 'bar',
-                        data: {
-                            labels: dailyLabels,
-                            datasets: [
-                                {
-                                    label: 'ตอบถูก',
-                                    data: dailyCorrectData,
-                                    backgroundColor: 'rgba(75, 192, 192, 0.6)',
-                                    borderColor: 'rgba(75, 192, 192, 1)',
-                                    borderWidth: 1
-                                },
-                                {
-                                    label: 'ตอบผิด',
-                                    data: dailyWrongData,
-                                    backgroundColor: 'rgba(255, 99, 132, 0.6)',
-                                    borderColor: 'rgba(255, 99, 132, 1)',
-                                    borderWidth: 1
-                                }
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {
-                                y: {
-                                    beginAtZero: true,
-                                    title: {
-                                        display: true,
-                                        text: 'จำนวนข้อ'
-                                    },
-                                    ticks: {
-                                        stepSize: 1
-                                    }
-                                }
-                            },
-                            plugins: {
-                                legend: {
-                                    position: 'top',
-                                },
-                                title: {
-                                    display: false,
-                                }
-                            }
-                        }
-                    });
+                    SpeechService.init(); 
+                    showApp();
+                    UI.renderMainMenu();
+                } else {
+                    showLoginScreen();
                 }
-            };
+            });
 
-            App.init();
+            goToRegisterLink.addEventListener('click', (e) => { e.preventDefault(); showRegisterScreen(); });
+            goToLoginLink.addEventListener('click', (e) => { e.preventDefault(); showLoginScreen(); });
+            loginBtn.addEventListener('click', () => signInWithEmailAndPassword(auth, loginEmailInput.value, loginPasswordInput.value).catch(err => showLoginError("อีเมลหรือรหัสผ่านไม่ถูกต้อง")));
+            registerBtn.addEventListener('click', () => createUserWithEmailAndPassword(auth, registerEmailInput.value, registerPasswordInput.value).then(() => { showAlert('สมัครสมาชิกสำเร็จ! กรุณากลับไปหน้าเข้าสู่ระบบ', 'success'); showLoginScreen(); }).catch(err => {
+                if (err.code === 'auth/email-already-in-use') { showRegisterError("อีเมลนี้ถูกใช้งานแล้ว"); }
+                else if (err.code === 'auth/weak-password') { showRegisterError("รหัสผ่านต้องมีความยาว 6 ตัวอักษรขึ้นไป"); }
+                else { showRegisterError(`เกิดข้อผิดพลาด: ${err.message}`); }
+            }));
+
+            // --- UI Object ---
+            const UI = { renderMainMenu: () => { appRoot.innerHTML = document.getElementById('template-main-menu').innerHTML; document.getElementById('welcome-message').textContent = `ยินดีต้อนรับ, ${currentUser.email}`; document.getElementById('logout-btn').addEventListener('click', () => signOut(auth)); document.getElementById('start-new-btn').addEventListener('click', UI.showStartSessionModal); document.getElementById('manage-btn').addEventListener('click', UI.renderManagePage); document.getElementById('dashboard-btn').addEventListener('click', UI.renderDashboardPage); }, renderManagePage: async () => { appRoot.innerHTML = document.getElementById('template-manage').innerHTML; document.getElementById('back-to-menu-btn').addEventListener('click', UI.renderMainMenu); const listContainer = document.getElementById('questions-list'); listContainer.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>'; allUserQuestions = await FirebaseService.getQuestions(currentUser.uid); if (allUserQuestions.length === 0) { listContainer.innerHTML = '<p class="text-center text-muted">ยังไม่มีคำศัพท์</p>'; } else { const now = new Date(); now.setHours(0,0,0,0); const tableHTML = `<table class="table table-striped table-hover"><thead><tr><th>คำศัพท์ / หมวดหมู่</th><th>สถานะ</th><th class="text-end">จัดการ</th></tr></thead><tbody>${allUserQuestions.sort((a,b)=>a.question.localeCompare(b.question)).map(q => { const nr = q.next_review_date.toDate(); const due = nr <= now; const s = due ? `<span class="badge bg-warning">ถึงรอบทวน</span>` : `<span class="badge bg-secondary">อีก ${Math.ceil((nr - now) / 864e5)} วัน</span>`; return `<tr><td>${q.question}<br><small class="text-muted">${q.answer}</small><br><small class="text-info">${q.category}</small></td><td><span class="badge bg-info">Lv. ${q.srs_level}</span> ${s}</td><td class="text-end"><button class="btn btn-sm btn-danger" data-id="${q.id}">ลบ</button></td></tr>`; }).join('')}</tbody></table>`; listContainer.innerHTML = tableHTML; } document.getElementById('add-form').addEventListener('submit', async (e) => { e.preventDefault(); const form = e.target; await FirebaseService.addQuestion(currentUser.uid, { question: form.elements['new-question'].value, answer: form.elements['new-answer'].value, category: form.elements['new-category'].value, srs_level: 0, next_review_date: Timestamp.now() }); showAlert('เพิ่มคำศัพท์สำเร็จ!'); UI.renderManagePage(); }); listContainer.querySelectorAll('.btn-danger').forEach(b => b.addEventListener('click', async (e) => { if (confirm('ยืนยันการลบ?')) { await FirebaseService.deleteQuestion(currentUser.uid, e.target.dataset.id); showAlert('ลบคำศัพท์แล้ว', 'warning'); UI.renderManagePage(); } })); }, renderDashboardPage: async () => { appRoot.innerHTML = document.getElementById('template-dashboard').innerHTML; document.getElementById('back-to-menu-btn').addEventListener('click', UI.renderMainMenu); const allResults = await FirebaseService.getResults(currentUser.uid); document.getElementById('total-questions').textContent = allUserQuestions.length; const now = new Date(); now.setHours(0,0,0,0); const dueCount = allUserQuestions.filter(q => q.next_review_date.toDate() <= now).length; document.getElementById('due-for-review').textContent = dueCount; const categoryCounts = allUserQuestions.reduce((acc, q) => { acc[q.category] = (acc[q.category] || 0) + 1; return acc; }, {}); if(categoryChartInstance) categoryChartInstance.destroy(); categoryChartInstance = new Chart(document.getElementById('categoryChart').getContext('2d'), { type: 'pie', data: { labels: Object.keys(categoryCounts), datasets: [{ data: Object.values(categoryCounts), backgroundColor: Object.keys(categoryCounts).map((_,i)=>`hsl(${i*60},70%,70%)`), hoverOffset: 4 }] }, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right'}}} }); const dailyResults = {}; for (let i = 6; i >= 0; i--) { const d = new Date(now); d.setDate(now.getDate() - i); dailyResults[d.toLocaleDateString('th-TH')] = { correct: 0, wrong: 0 }; } allResults.forEach(r => { const resultDate = r.timestamp.toDate().toLocaleDateString('th-TH'); if (dailyResults[resultDate]) { r.isCorrect ? dailyResults[resultDate].correct++ : dailyResults[resultDate].wrong++; } }); if(dailyResultChartInstance) dailyResultChartInstance.destroy(); dailyResultChartInstance = new Chart(document.getElementById('dailyResultChart').getContext('2d'), { type: 'bar', data: { labels: Object.keys(dailyResults), datasets: [{ label: 'ตอบถูก', data: Object.values(dailyResults).map(d=>d.correct), backgroundColor: 'rgba(75,192,192,0.6)' }, { label: 'ตอบผิด', data: Object.values(dailyResults).map(d=>d.wrong), backgroundColor: 'rgba(255,99,132,0.6)' }] }, options:{responsive:true, maintainAspectRatio:false, scales:{y:{beginAtZero:true, ticks:{stepSize:1}}}} }); }, showStartSessionModal: () => { const categorySelect = document.getElementById('category-select'); const categories = [...new Set(allUserQuestions.map(q => q.category))]; while (categorySelect.options.length > 2) { categorySelect.remove(2); } categories.forEach(cat => { const option = document.createElement('option'); option.value = cat; option.textContent = cat; categorySelect.appendChild(option); }); startSessionModalInstance = new bootstrap.Modal(document.getElementById('startSessionModal')); startSessionModalInstance.show(); document.getElementById('confirm-start-btn').onclick = () => { startSessionModalInstance.hide(); App.startSession({ category: categorySelect.value, mode: document.getElementById('mode-select').value }); }; }, renderTestPage: () => { appRoot.innerHTML = document.getElementById('template-test').innerHTML; const modeMap = {'multiple_choice': 'ตัวเลือก', 'reverse': 'สลับด้าน', 'typing': 'พิมพ์ตอบ'}; document.getElementById('session-title').innerHTML = `<i class="bi bi-patch-question-fill"></i> โหมด${modeMap[QuizSession.mode]} (${QuizSession.category})`; App.nextQuestion(); }, displayQuestion: (q) => { const qa = document.getElementById('quiz-area'); let questionHTML = `<div class="d-flex justify-content-between mb-2"><button class="btn btn-sm btn-outline-secondary" id="back-to-menu-quiz-btn"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button><button class="btn btn-sm btn-outline-info" id="history-btn"><i class="bi bi-clock-history"></i> ดูข้อที่ตอบแล้ว</button></div>`; const isReverse = QuizSession.mode === 'reverse'; const mainText = isReverse ? q.answer : q.question; const subText = isReverse ? 'จงตอบเป็นภาษาอังกฤษ' : 'จงแปลคำว่า'; const speakLang = isReverse ? 'th-TH' : 'en-US'; const micLang = isReverse ? 'en-US' : 'th-TH'; questionHTML += `<p class="fs-4 d-flex justify-content-center align-items-center gap-2">${subText} "<strong>${mainText}</strong>"<button class="btn btn-sm btn-outline-primary" id="speak-btn"><i class="bi bi-volume-up-fill"></i></button></p>`; if (QuizSession.mode === 'typing') { questionHTML += `<form id="typing-form"><div class="input-group my-3"><input type="text" id="typing-answer" class="form-control" autofocus><button class="btn btn-primary" type="submit">ส่งคำตอบ</button></div></form>`; } else { const choices = App.generateChoices(q, allUserQuestions, isReverse); questionHTML += `<div id="choices-area" class="d-grid gap-2 my-3">${choices.map(c => `<button class="btn btn-outline-primary">${c}</button>`).join('')}</div>`; } questionHTML += `<div class="d-flex justify-content-center align-items-center gap-3 mt-3"><button id="mic-btn" class="btn btn-lg btn-secondary rounded-circle"><i class="bi bi-mic-fill"></i></button></div>`
+ qa.innerHTML = questionHTML; document.getElementById('back-to-menu-quiz-btn').addEventListener('click', UI.renderMainMenu); document.getElementById('history-btn').addEventListener('click', UI.showHistory); document.getElementById('speak-btn').addEventListener('click', () => SpeechService.speak(mainText, speakLang)); const micBtn = document.getElementById('mic-btn'); micBtn.addEventListener('click', () => SpeechService.toggleListen(micBtn, micLang)); if (QuizSession.mode === 'typing') { document.getElementById('typing-form').addEventListener('submit', (e) => { e.preventDefault(); App.handleAnswer(document.getElementById('typing-answer').value); }); } else { qa.querySelectorAll('#choices-area button').forEach(btn => btn.addEventListener('click', () => App.handleAnswer(btn.textContent))); } SpeechService.speak(mainText, speakLang); }, showHistory: () => { const body = document.getElementById('history-modal-body'); body.innerHTML = QuizSession.answeredThisSession.length === 0 ? '<p>ยังไม่มีข้อที่ตอบ</p>' : `<ul class="list-group list-group-flush">${QuizSession.answeredThisSession.map(item => `<li class="list-group-item"><div class="fw-bold">${item.question.question} -> ${item.question.answer}</div><small>คุณตอบ: ${item.userAnswer}</small> ${item.isCorrect ? '<span class="badge bg-success">ถูก</span>' : '<span class="badge bg-danger">ผิด</span>'}</li>`).join('')}</ul>`; historyModalInstance = new bootstrap.Modal(document.getElementById('historyModal')); historyModalInstance.show(); }, };
+            // --- App Object ---
+            const App = { startSession: (options) => { QuizSession = { ...options, dueQuestions: [], answeredThisSession: [] }; const now = new Date(); now.setHours(0,0,0,0); let filtered = []; if (options.category === 'all') { filtered = allUserQuestions; } else if (options.category === 'due') { filtered = allUserQuestions.filter(q => q.next_review_date.toDate() <= now); } else { filtered = allUserQuestions.filter(q => q.category === options.category); } QuizSession.dueQuestions = filtered.sort(() => Math.random() - 0.5); if(QuizSession.dueQuestions.length === 0){ showAlert('ไม่มีคำศัพท์ในหมวดหมู่นี้ที่ต้องทบทวน', 'info'); return; } UI.renderTestPage(); }, nextQuestion: () => { document.getElementById('due-count-badge').textContent = `เหลือ: ${QuizSession.dueQuestions.length}`; const nextQ = QuizSession.dueQuestions.pop(); if (nextQ) { QuizSession.currentQuestion = nextQ; UI.displayQuestion(nextQ); } else { showAlert('ทบทวนรอบนี้เสร็จแล้ว!', 'success'); UI.renderMainMenu(); } }, handleAnswer: async (userAnswer) => { const q = QuizSession.currentQuestion; if (!q || !userAnswer) return; document.querySelectorAll('#quiz-area button, #quiz-area input').forEach(el => el.disabled = true); const isReverse = QuizSession.mode === 'reverse'; const correctAnswer = isReverse ? q.question : q.answer; const isCorrect = userAnswer.trim().toLowerCase() === correctAnswer.toLowerCase(); QuizSession.answeredThisSession.push({ question: q, userAnswer: userAnswer, isCorrect: isCorrect }); await FirebaseService.addResult(currentUser.uid, { question: q.question, answer: q.answer, userAnswer, isCorrect, timestamp: Timestamp.now() }); let newSrsLevel = q.srs_level; if (isCorrect) { newSrsLevel++; showAlert('ถูกต้อง!', 'success'); } else { newSrsLevel = Math.max(0, newSrsLevel - 1); showAlert(`ผิด! คำตอบคือ "${correctAnswer}"`, 'danger'); } const daysToAdd = SRS_LEVELS[Math.min(newSrsLevel, SRS_LEVELS.length - 1)] || 1; const nextReviewDate = new Date(); nextReviewDate.setHours(0,0,0,0); nextReviewDate.setDate(nextReviewDate.getDate() + daysToAdd); await FirebaseService.updateQuestion(currentUser.uid, q.id, { srs_level: newSrsLevel, next_review_date: Timestamp.fromDate(nextReviewDate) }); const qIndex = allUserQuestions.findIndex(item => item.id === q.id); if (qIndex > -1) { allUserQuestions[qIndex] = { ...allUserQuestions[qIndex], srs_level: newSrsLevel, next_review_date: Timestamp.fromDate(nextReviewDate) }; } setTimeout(App.nextQuestion, isCorrect ? 800 : 2000); }, generateChoices: (q, all, isReverse) => { const ans = isReverse ? q.question : q.answer; let choices = new Set([ans]); const distractors = all.filter(item => item.id !== q.id).map(item => isReverse ? item.question : item.answer); while (choices.size < 4 && distractors.length > 0) { const randomIndex = Math.floor(Math.random() * distractors.length); choices.add(distractors.splice(randomIndex, 1)[0]); } return [...choices].sort(() => Math.random() - 0.5); } };
         });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
