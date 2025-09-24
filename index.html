@@ -45,9 +45,20 @@
 
     <div id="alert-container"></div>
     
-    <div class="modal fade" id="historyModal" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="history-modal-title">ประวัติ</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="history-modal-body"></div></div></div></div>
-    <div class="modal fade" id="startSessionModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">เริ่มรอบใหม่</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="mb-3"><label class="form-label">เลือกโหมด</label><div class="form-check"><input class="form-check-input" type="radio" name="sessionMode" id="mode-listen" value="listen" checked><label class="form-check-label" for="mode-listen">โหมดฟัง (ทบทวนคำศัพท์)</label></div><div class="form-check"><input class="form-check-input" type="radio" name="sessionMode" id="mode-quiz" value="quiz"><label class="form-check-label" for="mode-quiz">โหมดทดสอบการพูด (ตอบถูก/ผิด)</label></div></div><div class="mb-3"><label for="category-select" class="form-label">เลือกชุดคำศัพท์</label><select id="category-select" class="form-select"><option value="all">ทบทวนทั้งหมด</option><option value="due">เฉพาะที่ถึงรอบทวน (วันนี้)</option></select></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button><button type="button" id="confirm-start-btn" class="btn btn-primary">เริ่มต้น</button></div></div></div></div>
-    <template id="template-main-menu"><div class="card"><div class="card-body"><div class="d-flex justify-content-between align-items-center mb-4"><h5 class="mb-0" id="welcome-message"></h5><button id="logout-btn" class="btn btn-sm btn-outline-danger">ออกจากระบบ</button></div><div class="text-center p-2"><h1 class="text-primary mb-3">เว็บทบทวนคำศัพท์</h1><p class="text-muted mb-4">เลือกเมนูเพื่อเริ่มต้น</p><div class="d-grid gap-3"><button id="start-new-btn" class="btn btn-primary btn-lg"><i class="bi bi-stars"></i> เริ่มรอบใหม่</button><button id="manage-btn" class="btn btn-outline-secondary"><i class="bi bi-gear-fill"></i> จัดการข้อมูล</button><button id="dashboard-btn" class="btn btn-outline-info"><i class="bi bi-graph-up"></i> ดูสถิติ</button></div></div></div></div></template>
+    <div class="modal fade" id="historyModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="history-modal-title">ประวัติ</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="history-modal-body"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="startSessionModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">เริ่มรอบทบทวน (โหมดฟัง)</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="mb-3"><label for="category-select" class="form-label">เลือกชุดคำศัพท์</label><select id="category-select" class="form-select"><option value="all">ทบทวนทั้งหมด</option><option value="due">เฉพาะที่ถึงรอบทวน (วันนี้)</option><option value="custom_date">เลือกวันที่ต้องการทบทวน...</option></select></div><div class="mb-3 hidden" id="custom-date-picker-container"><label for="custom-date-picker" class="form-label">เลือกวันที่</label><input type="date" id="custom-date-picker" class="form-control"></div><div class="mb-3"><label for="direction-select" class="form-label">เลือกลำดับการอ่าน</label><select id="direction-select" class="form-select"><option value="en-th">อ่านอังกฤษ -> อ่านไทย</option><option value="th-en">อ่านไทย -> อ่านอังกฤษ</option></select></div></div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button><button type="button" id="confirm-start-btn" class="btn btn-primary">เริ่มต้น</button></div></div></div></div>
+    <template id="template-main-menu"><div class="card"><div class="card-body"><div class="d-flex justify-content-between align-items-center mb-4"><h5 class="mb-0" id="welcome-message"></h5><button id="logout-btn" class="btn btn-sm btn-outline-danger">ออกจากระบบ</button></div><div class="text-center p-2"><h1 class="text-primary mb-3">เว็บทบทวนคำศัพท์</h1><p class="text-muted mb-4">เลือกเมนูเพื่อเริ่มต้น</p><div class="d-grid gap-3"><button id="start-new-btn" class="btn btn-primary btn-lg"><i class="bi bi-stars"></i> เริ่มทำแบบทดสอบ</button><button id="manage-btn" class="btn btn-outline-secondary"><i class="bi bi-gear-fill"></i> จัดการข้อมูล</button><button id="dashboard-btn" class="btn btn-outline-info"><i class="bi bi-graph-up"></i> ดูสถิติ</button></div></div></div></div></template>
     <template id="template-test"><div class="card"><div class="card-header bg-primary text-white d-flex justify-content-between align-items-center"><h3 id="session-title" class="fs-5 mb-0"></h3><div id="session-stats"><span id="due-count-badge" class="badge bg-light text-dark"></span></div></div><div class="card-body text-center" id="quiz-area"></div></div></template>
     <template id="template-manage"><button id="back-to-menu-btn" class="btn btn-secondary mb-3 w-100"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button><div class="card mb-4"><div class="card-header bg-info text-white"><h5><i class="bi bi-plus-circle-fill"></i> เพิ่มคำศัพท์ใหม่</h5></div><div class="card-body"><form id="add-form"><div class="mb-3"><label for="new-question" class="form-label">คำศัพท์ภาษาอังกฤษ</label><input type="text" id="new-question" class="form-control" required></div><div class="mb-3"><label for="new-answer" class="form-label">คำแปลภาษาไทย</label><input type="text" id="new-answer" class="form-control" required></div><div class="mb-3"><label for="new-category" class="form-label">หมวดหมู่</label><input type="text" id="new-category" class="form-control" placeholder="เช่น วิศวกรรมไฟฟ้า" required></div><button type="submit" class="btn btn-success w-100">เพิ่มคำศัพท์</button></form></div></div><div class="card"><div class="card-header bg-secondary text-white"><h5><i class="bi bi-card-list"></i> คลังคำศัพท์ทั้งหมด</h5></div><div class="card-body"><div id="questions-list" class="table-responsive"></div></div></div></template>
     <template id="template-dashboard"><button id="back-to-menu-btn" class="btn btn-secondary mb-3 w-100"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button><div class="card mb-4"><div class="card-header bg-primary text-white"><h5><i class="bi bi-speedometer2"></i> แดชบอร์ดสรุปผล</h5></div><div class="card-body"><div class="row text-center mb-4"><div class="col"><h4 class="mb-0 text-primary" id="total-questions">0</h4><small class="text-muted">คำศัพท์ทั้งหมด</small></div><div class="col"><h4 class="mb-0 text-warning" id="due-for-review">0</h4><small class="text-muted">ถึงรอบทวน</small></div></div><hr><h6 class="mb-3">สัดส่วนคำศัพท์ตามหมวดหมู่</h6><div style="position: relative; height:300px; width:100%"><canvas id="categoryChart"></canvas></div><hr><h6 class="mb-3">ผลการตอบถูก/ผิด ย้อนหลัง 7 วัน</h6><div style="position: relative; height:300px; width:100%"><canvas id="dailyResultChart"></canvas></div></div></div></template>
@@ -60,7 +71,7 @@
 
         // Firebase configuration (No changes)
         // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-        const firebaseConfig = {
+            const firebaseConfig = {
             apiKey: "AIzaSyDMmUxdlbAsjXdVr8JXfFV6zqVL2am9bwM",
             authDomain: "spaced-repetition-system-7ce8a.firebaseapp.com",
             projectId: "spaced-repetition-system-7ce8a",
@@ -135,9 +146,8 @@
                         setTimeout(() => SpeechService.speak(text2, lang2), 400);
                     });
                 },
-                toggleListen: (btn, lang) => {
+                toggleListen: (btn) => {
                     if (!SpeechService.recognition) { showAlert('เบราว์เซอร์ไม่รองรับการพูด', 'warning'); return; }
-                    if (SpeechService.recognition.lang !== lang) SpeechService.recognition.lang = lang;
                     if (SpeechService.isListening) { SpeechService.recognition.stop(); return; }
                     SpeechService.recognition.start();
                     SpeechService.recognition.onstart = () => { SpeechService.isListening = true; btn.classList.add('mic-listening'); };
@@ -252,160 +262,35 @@
                     listContainer.querySelectorAll('.recording-history-btn').forEach(b => b.addEventListener('click', (e) => { UI.showRecordingHistory(e.currentTarget.dataset.wordId, e.currentTarget.dataset.wordQ); }));
                 },
                 renderDashboardPage: async () => { appRoot.innerHTML = document.getElementById('template-dashboard').innerHTML; document.getElementById('back-to-menu-btn').addEventListener('click', UI.renderMainMenu); const allResults = await FirebaseService.getResults(currentUser.uid); document.getElementById('total-questions').textContent = allUserQuestions.length; const now = new Date(); now.setHours(0,0,0,0); const dueCount = allUserQuestions.filter(q => q.next_review_date.toDate() <= now).length; document.getElementById('due-for-review').textContent = dueCount; const categoryCounts = allUserQuestions.reduce((acc, q) => { acc[q.category] = (acc[q.category] || 0) + 1; return acc; }, {}); if(categoryChartInstance) categoryChartInstance.destroy(); categoryChartInstance = new Chart(document.getElementById('categoryChart').getContext('2d'), { type: 'pie', data: { labels: Object.keys(categoryCounts), datasets: [{ data: Object.values(categoryCounts), backgroundColor: Object.keys(categoryCounts).map((_,i)=>`hsl(${i*60},70%,70%)`), hoverOffset: 4 }] }, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'right'}}} }); const dailyResults = {}; for (let i = 6; i >= 0; i--) { const d = new Date(now); d.setDate(now.getDate() - i); dailyResults[d.toLocaleDateString('th-TH')] = { correct: 0, wrong: 0 }; } allResults.forEach(r => { const resultDate = r.timestamp.toDate().toLocaleDateString('th-TH'); if (dailyResults[resultDate]) { r.isCorrect ? dailyResults[resultDate].correct++ : dailyResults[resultDate].wrong++; } }); if(dailyResultChartInstance) dailyResultChartInstance.destroy(); dailyResultChartInstance = new Chart(document.getElementById('dailyResultChart').getContext('2d'), { type: 'bar', data: { labels: Object.keys(dailyResults), datasets: [{ label: 'ตอบถูก', data: Object.values(dailyResults).map(d=>d.correct), backgroundColor: 'rgba(75,192,192,0.6)' }, { label: 'ตอบผิด', data: Object.values(dailyResults).map(d=>d.wrong), backgroundColor: 'rgba(255,99,132,0.6)' }] }, options:{responsive:true, maintainAspectRatio:false, scales:{y:{beginAtZero:true, ticks:{stepSize:1}}}} }); },
-                showStartSessionModal: () => {
-                    const categorySelect = document.getElementById('category-select');
-                    const dynamicOptions = categorySelect.querySelectorAll('option[data-dynamic]');
-                    dynamicOptions.forEach(opt => opt.remove());
-                    const categories = [...new Set(allUserQuestions.map(q => q.category))];
-                    categories.forEach(cat => {
-                        const option = document.createElement('option');
-                        option.value = cat;
-                        option.textContent = `เฉพาะหมวดหมู่: ${cat}`;
-                        option.dataset.dynamic = true;
-                        categorySelect.appendChild(option);
-                    });
-                    startSessionModalInstance = new bootstrap.Modal(document.getElementById('startSessionModal'));
-                    startSessionModalInstance.show();
-                    document.getElementById('confirm-start-btn').onclick = () => {
-                        startSessionModalInstance.hide();
-                        const sessionOptions = {
-                            mode: document.querySelector('input[name="sessionMode"]:checked').value,
-                            category: categorySelect.value,
-                        };
-                        App.startSession(sessionOptions);
-                    };
-                },
-                renderTestPage: () => { 
-                    appRoot.innerHTML = document.getElementById('template-test').innerHTML;
-                    const modeMap = { 'listen': 'โหมดฟัง', 'quiz': 'โหมดทดสอบการพูด' };
-                    document.getElementById('session-title').innerHTML = `<i class="bi bi-earbuds"></i> ${modeMap[QuizSession.mode]}`;
-                    App.nextCard(); 
-                },
+                showStartSessionModal: () => { const categorySelect = document.getElementById('category-select'); const datePickerContainer = document.getElementById('custom-date-picker-container'); const datePicker = document.getElementById('custom-date-picker'); const dynamicOptions = categorySelect.querySelectorAll('option[data-dynamic]'); dynamicOptions.forEach(opt => opt.remove()); const categories = [...new Set(allUserQuestions.map(q => q.category))]; categories.forEach(cat => { const option = document.createElement('option'); option.value = cat; option.textContent = `เฉพาะหมวดหมู่: ${cat}`; option.dataset.dynamic = true; categorySelect.appendChild(option); }); datePicker.valueAsDate = new Date(); categorySelect.addEventListener('change', () => { datePickerContainer.classList.toggle('hidden', categorySelect.value !== 'custom_date'); }); startSessionModalInstance = new bootstrap.Modal(document.getElementById('startSessionModal')); startSessionModalInstance.show(); document.getElementById('confirm-start-btn').onclick = () => { startSessionModalInstance.hide(); const sessionOptions = { category: categorySelect.value, direction: document.getElementById('direction-select').value, }; if (sessionOptions.category === 'custom_date') { sessionOptions.customDate = datePicker.value; } App.startSession(sessionOptions); }; },
+                renderTestPage: () => { appRoot.innerHTML = document.getElementById('template-test').innerHTML; const directionMap = {'en-th': 'อังกฤษ -> ไทย', 'th-en': 'ไทย -> อังกฤษ'}; document.getElementById('session-title').innerHTML = `<i class="bi bi-earbuds"></i> โหมดฟัง (${directionMap[QuizSession.direction]})`; App.nextCard(); },
                 
-                displayListenCard: (q) => {
+                displayCard: (q) => {
                     const qa = document.getElementById('quiz-area');
-                    let cardHTML = `<div class="d-flex justify-content-between mb-2">
-                                        <button class="btn btn-sm btn-outline-secondary" id="back-to-menu-quiz-btn"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button>
-                                        <button id="skip-btn" class="btn btn-sm btn-outline-warning">ข้ามข้อนี้ <i class="bi bi-arrow-right-short"></i></button>
-                                    </div>
-                                    <div class="my-4 p-3 border rounded bg-light">
-                                        <p class="fs-4"><strong>${q.question}</strong></p>
-                                        <p class="fs-5 text-muted">${q.answer}</p>
-                                    </div>
-                                    <hr>
-                                    <p class="fs-5 mt-4">เลือก Level หรือออกคำสั่ง</p>
-                                    <div class="d-flex justify-content-center align-items-center gap-3 mt-3">
-                                        <div>
-                                            <button id="command-btn" class="btn btn-lg btn-secondary rounded-circle" style="width: 80px; height: 80px;"><i class="bi bi-chat-dots-fill fs-2"></i></button>
-                                            <p class="mt-2 text-muted small">ออกคำสั่งเสียง</p>
-                                        </div>
-                                    </div>
-                                    <div class="mt-4">
-                                        <p class="small text-muted">หรือคลิกเพื่อเลือก Level</p>
-                                        <div class="btn-group" role="group">
-                                            <button type="button" class="btn btn-outline-secondary level-btn" data-level="1">1</button>
-                                            <button type="button" class="btn btn-outline-secondary level-btn" data-level="2">2</button>
-                                            <button type="button" class="btn btn-outline-secondary level-btn" data-level="3">3</button>
-                                            <button type="button" class="btn btn-outline-secondary level-btn" data-level="4">4</button>
-                                            <button type="button" class="btn btn-outline-secondary level-btn" data-level="5">5</button>
-                                        </div>
-                                    </div>`;
+                    const isEnTh = QuizSession.direction === 'en-th';
+                    const text1 = isEnTh ? q.question : q.answer;
+                    const lang1 = isEnTh ? 'en-US' : 'th-TH';
+                    const text2 = isEnTh ? q.answer : q.question;
+                    const lang2 = isEnTh ? 'th-TH' : 'en-US';
+                    let cardHTML = `<div class="d-flex justify-content-between mb-2"><button class="btn btn-sm btn-outline-secondary" id="back-to-menu-quiz-btn"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button><button class="btn btn-sm btn-outline-info" id="history-btn"><i class="bi bi-clock-history"></i> ดูที่ทบทวนแล้ว</button></div><div class="my-4 p-3 border rounded bg-light"><p class="fs-4"><strong>${text1}</strong></p><p class="fs-5 text-muted">${text2}</p></div><hr><p class="fs-5 mt-4">ฝึกออกเสียงและออกคำสั่ง</p><div class="d-flex justify-content-center align-items-center gap-3 mt-3"><div><button id="record-btn" class="btn btn-lg btn-danger rounded-circle" style="width: 80px; height: 80px;"><i class="bi bi-mic-fill fs-2"></i></button><p class="mt-2 text-muted small">อัดเสียงของคุณ</p></div><button id="play-recording-btn" class="btn btn-lg btn-info rounded-circle hidden" style="width: 60px; height: 60px;"><i class="bi bi-play-fill fs-3"></i></button><div><button id="command-btn" class="btn btn-lg btn-secondary rounded-circle" style="width: 80px; height: 80px;"><i class="bi bi-chat-dots-fill fs-2"></i></button><p class="mt-2 text-muted small">ออกคำสั่งเสียง</p></div></div>`;
                     qa.innerHTML = cardHTML;
                     document.getElementById('back-to-menu-quiz-btn').addEventListener('click', UI.renderMainMenu);
-                    document.getElementById('skip-btn').addEventListener('click', () => App.skipCard());
-                    document.getElementById('command-btn').addEventListener('click', () => SpeechService.toggleListen(document.getElementById('command-btn'), 'th-TH'));
-                    qa.querySelectorAll('.level-btn').forEach(btn => {
-                        btn.addEventListener('click', () => App.setReviewByLevel(parseInt(btn.dataset.level)));
-                    });
-                    SpeechService.speakPair(q.question, 'en-US', q.answer, 'th-TH');
+                    document.getElementById('history-btn').addEventListener('click', () => UI.showSessionHistory());
+                    document.getElementById('record-btn').addEventListener('click', App.handleRecording);
+                    document.getElementById('command-btn').addEventListener('click', () => SpeechService.toggleListen(document.getElementById('command-btn')));
+                    SpeechService.speakPair(text1, lang1, text2, lang2);
                 },
 
-                displaySpeakingQuizCard: (q) => {
-                    const qa = document.getElementById('quiz-area');
-                    const promptText = q.answer;
-                    const promptLang = 'th-TH';
-                    const answerText = q.question;
-
-                    let cardHTML = `
-                        <div class="d-flex justify-content-between mb-2">
-                            <button class="btn btn-sm btn-outline-secondary" id="back-to-menu-quiz-btn"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button>
-                            <button id="skip-btn" class="btn btn-sm btn-outline-warning">ข้ามข้อนี้ <i class="bi bi-arrow-right-short"></i></button>
-                        </div>
-                        <div class="my-4 p-3">
-                            <p class="fs-5 text-muted">คำศัพท์คำนี้คืออะไร?</p>
-                            <h2 class="display-5">${promptText}</h2>
-                            <p id="correct-answer-display" class="fs-4 text-primary hidden mt-3"><strong>${answerText}</strong></p>
-                        </div>
-                        <div class="text-center mb-3">
-                            <button id="speak-prompt-btn" class="btn btn-sm btn-outline-secondary me-2"><i class="bi bi-volume-up-fill"></i> ฟังคำใบ้</button>
-                            <button id="show-answer-btn" class="btn btn-sm btn-outline-info"><i class="bi bi-eye-fill"></i> เฉลย</button>
-                        </div>
-                        <hr>
-                        <p class="fs-5 mt-4">กดปุ่มไมโครโฟนค้างไว้เพื่อพูดคำตอบ</p>
-                        <div class="d-flex justify-content-center align-items-center gap-3 mt-3">
-                            <button id="answer-mic-btn" class="btn btn-lg btn-danger rounded-circle" style="width: 80px; height: 80px;"><i class="bi bi-mic-fill fs-2"></i></button>
-                        </div>`;
-                    
-                    qa.innerHTML = cardHTML;
-                    document.getElementById('back-to-menu-quiz-btn').addEventListener('click', UI.renderMainMenu);
-                    document.getElementById('skip-btn').addEventListener('click', () => App.skipCard());
-                    document.getElementById('speak-prompt-btn').addEventListener('click', () => SpeechService.speak(promptText, promptLang));
-                    document.getElementById('show-answer-btn').addEventListener('click', () => {
-                        document.getElementById('correct-answer-display').classList.remove('hidden');
-                    });
-                    
-                    const micBtn = document.getElementById('answer-mic-btn');
-                    micBtn.addEventListener('mousedown', () => App.handleQuizAnswer('start', micBtn));
-                    micBtn.addEventListener('mouseup', () => App.handleQuizAnswer('stop', micBtn));
-                    micBtn.addEventListener('touchstart', (e) => { e.preventDefault(); App.handleQuizAnswer('start', micBtn); });
-                    micBtn.addEventListener('touchend', (e) => { e.preventDefault(); App.handleQuizAnswer('stop', micBtn); });
-
-                    SpeechService.speak(promptText, promptLang);
+                showSessionHistory: () => {
+                    const title = document.getElementById('history-modal-title');
+                    const body = document.getElementById('history-modal-body');
+                    title.textContent = "คำศัพท์ที่ทบทวนไปในรอบนี้";
+                    body.innerHTML = QuizSession.answeredThisSession.length === 0 ? '<p>ยังไม่มีคำที่ทบทวน</p>' : `<ul class="list-group list-group-flush">${QuizSession.answeredThisSession.map(item => `<li class="list-group-item"><strong>${item.question}</strong> -> ${item.answer}</li>`).join('')}</ul>`;
+                    historyModalInstance = new bootstrap.Modal(document.getElementById('historyModal'));
+                    historyModalInstance.show();
                 },
                 
-                showQuizResult: (isCorrect, transcript) => {
-                    const q = QuizSession.currentQuestion;
-                    const qa = document.getElementById('quiz-area');
-                    const resultText = isCorrect ? "ถูกต้อง!" : "ยังไม่ถูกต้อง";
-                    const resultClass = isCorrect ? "text-success" : "text-danger";
-
-                    let resultHTML = `<div class="my-4 p-3">
-                                        <h2 class="${resultClass}">${resultText}</h2>
-                                        <p class="text-muted">คุณตอบว่า (ระบบได้ยิน): <strong class="text-dark">"${transcript || 'ไม่ได้ยินเสียง'}"</strong></p>
-                                        <hr>
-                                        <p class="mt-3">คำตอบที่ถูกต้องคือ:</p>
-                                        <h3 class="display-6 text-primary">${q.question}</h3>
-                                        <p class="mt-4 text-muted">กำลังไปขั้นตอนต่อไป...</p>
-                                     </div>`;
-                    qa.innerHTML = resultHTML;
-
-                    SpeechService.speak(q.question, 'en-US');
-
-                    setTimeout(() => {
-                        if(isCorrect) {
-                            QuizSession.isAwaitingLevel = true;
-                            UI.showLevelSelection();
-                        } else {
-                            UI.displaySpeakingQuizCard(q);
-                        }
-                    }, 3000); 
-                },
-
-                showLevelSelection: () => {
-                    const qa = document.getElementById('quiz-area');
-                    let optionsHTML = `<h4 class="mb-3">คุณจำคำนี้ได้ดีแค่ไหน?</h4><div class="text-start mx-auto" style="max-width: 300px;">`;
-                    for(const level in LEVEL_DESCRIPTIONS){
-                        optionsHTML += `<p><strong>เลเวล ${level}:</strong> ${LEVEL_DESCRIPTIONS[level]}</p>`;
-                    }
-                    optionsHTML += `</div><div class="mt-4"><p class="small text-muted">คลิกหรือพูดเพื่อเลือก Level</p><div class="btn-group" role="group"><button type="button" class="btn btn-outline-secondary level-btn" data-level="1">1</button><button type="button" class="btn btn-outline-secondary level-btn" data-level="2">2</button><button type="button" class="btn btn-outline-secondary level-btn" data-level="3">3</button><button type="button" class="btn btn-outline-secondary level-btn" data-level="4">4</button><button type="button" class="btn btn-outline-secondary level-btn" data-level="5">5</button></div><button id="mic-btn" class="btn btn-secondary rounded-circle ms-3"><i class="bi bi-mic-fill"></i></button></div>`;
-                    qa.innerHTML = optionsHTML;
-                    const micBtn = document.getElementById('mic-btn');
-                    micBtn.addEventListener('click', () => SpeechService.toggleListen(micBtn, 'th-TH'));
-                    qa.querySelectorAll('.level-btn').forEach(btn => {
-                        btn.addEventListener('click', () => App.setReviewByLevel(parseInt(btn.dataset.level)));
-                    });
-                },
-                
+                // --- UPDATED: showRecordingHistory to have Side-by-Side view ---
                 showRecordingHistory: async (wordId, wordQ) => {
                     const title = document.getElementById('history-modal-title');
                     const body = document.getElementById('history-modal-body');
@@ -413,125 +298,105 @@
                     body.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
                     historyModalInstance = new bootstrap.Modal(document.getElementById('historyModal'));
                     historyModalInstance.show();
+
                     try {
                         const recordings = await IndexedDBService.getRecordingsForWord(wordId);
-                        if (recordings.length === 0) { body.innerHTML = '<p class="text-center text-muted">ยังไม่มีเสียงที่อัดไว้สำหรับคำนี้</p>'; } 
-                        else if (recordings.length === 1) { const rec = recordings[0]; const audioUrl = URL.createObjectURL(rec.audioBlob); body.innerHTML = `<h5 class="mb-3">ไฟล์เสียงเดียวที่มี</h5><p>อัดเมื่อ: ${rec.timestamp.toLocaleString('th-TH')}</p><audio controls src="${audioUrl}" class="w-100"></audio>`; } 
-                        else {
+                        if (recordings.length === 0) {
+                            body.innerHTML = '<p class="text-center text-muted">ยังไม่มีเสียงที่อัดไว้สำหรับคำนี้</p>';
+                        } else if (recordings.length === 1) {
+                            const rec = recordings[0];
+                            const audioUrl = URL.createObjectURL(rec.audioBlob);
+                            body.innerHTML = `<h5 class="mb-3">ไฟล์เสียงเดียวที่มี</h5>
+                                              <p>อัดเมื่อ: ${rec.timestamp.toLocaleString('th-TH')}</p>
+                                              <audio controls src="${audioUrl}" class="w-100"></audio>`;
+                        } else {
                             const earliestRec = recordings[0];
                             const latestRec = recordings[recordings.length - 1];
                             const earliestUrl = URL.createObjectURL(earliestRec.audioBlob);
                             const latestUrl = URL.createObjectURL(latestRec.audioBlob);
-                            body.innerHTML = `<div class="row"><div class="col-md-6 mb-3 mb-md-0"><div class="card h-100"><div class="card-header"><h5><i class="bi bi-skip-start-circle"></i> การอัดครั้งแรก</h5></div><div class="card-body"><p><small>อัดเมื่อ: ${earliestRec.timestamp.toLocaleString('th-TH')}</small></p><audio controls class="w-100" src="${earliestUrl}"></audio></div></div></div><div class="col-md-6"><div class="card h-100"><div class="card-header"><h5><i class="bi bi-check-circle"></i> การอัดล่าสุด</h5></div><div class="card-body"><p><small>อัดเมื่อ: ${latestRec.timestamp.toLocaleString('th-TH')}</small></p><audio controls class="w-100" src="${latestUrl}"></audio></div></div></div></div>`;
+                            body.innerHTML = `
+                                <div class="row">
+                                    <div class="col-md-6 mb-3 mb-md-0">
+                                        <div class="card h-100">
+                                            <div class="card-header"><h5><i class="bi bi-skip-start-circle"></i> การอัดครั้งแรก</h5></div>
+                                            <div class="card-body">
+                                                <p><small>อัดเมื่อ: ${earliestRec.timestamp.toLocaleString('th-TH')}</small></p>
+                                                <audio controls class="w-100" src="${earliestUrl}"></audio>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card h-100">
+                                            <div class="card-header"><h5><i class="bi bi-check-circle"></i> การอัดล่าสุด</h5></div>
+                                            <div class="card-body">
+                                                <p><small>อัดเมื่อ: ${latestRec.timestamp.toLocaleString('th-TH')}</small></p>
+                                                <audio controls class="w-100" src="${latestUrl}"></audio>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>`;
                         }
-                    } catch (err) { body.innerHTML = '<p class="text-center text-danger">ไม่สามารถโหลดข้อมูลเสียงได้</p>'; }
+                    } catch (err) {
+                        body.innerHTML = '<p class="text-center text-danger">ไม่สามารถโหลดข้อมูลเสียงได้</p>';
+                    }
                 }
             };
             
             const App = {
-                startSession: (options) => { 
-                    QuizSession = { ...options, dueQuestions: [], answeredThisSession: [], isAwaitingLevel: false, lastRecordingBlob: null }; 
-                    let filtered = []; 
-                    let categoryDisplay = options.category; 
-                    if (options.category === 'all') { filtered = allUserQuestions; categoryDisplay = "ทั้งหมด"; } 
-                    else if (options.category === 'due') { const now = new Date(); now.setHours(0, 0, 0, 0); filtered = allUserQuestions.filter(q => q.next_review_date.toDate() <= now); categoryDisplay = "ถึงกำหนดทวน"; } 
-                    else { filtered = allUserQuestions.filter(q => q.category === options.category); } 
-                    QuizSession.dueQuestions = filtered.sort(() => Math.random() - 0.5); 
-                    QuizSession.categoryDisplay = categoryDisplay; 
-                    if (QuizSession.dueQuestions.length === 0) { showAlert('ไม่มีคำศัพท์ที่ตรงตามเงื่อนไขนี้', 'info'); return; } 
-                    UI.renderTestPage(); 
-                },
-                nextCard: () => { 
-                    QuizSession.isAwaitingLevel = false;
-                    QuizSession.lastRecordingBlob = null; 
-                    const badge = document.getElementById('due-count-badge');
-                    if(badge) badge.textContent = `เหลือ: ${QuizSession.dueQuestions.length}`;
-                    const nextQ = QuizSession.dueQuestions.pop(); 
-                    if (nextQ) { 
-                        QuizSession.currentQuestion = nextQ;
-                        if (QuizSession.mode === 'listen') {
-                            UI.displayListenCard(nextQ);
-                        } else {
-                            UI.displaySpeakingQuizCard(nextQ);
-                        }
-                    } else { 
-                        showAlert('รอบนี้เสร็จแล้ว!', 'success'); 
-                        UI.renderMainMenu(); 
-                    } 
-                },
-                
-                skipCard: () => {
-                    const q = QuizSession.currentQuestion;
-                    if(q) {
-                        QuizSession.dueQuestions.unshift(q); // Put it at the beginning of the array
-                    }
-                    App.nextCard();
-                },
-
-                handleQuizAnswer: async (action, btn) => {
-                    if (action === 'start') {
-                        if (RecordingService.isRecording || SpeechService.isListening) return;
-                        RecordingService.startRecording(btn);
-                        SpeechService.toggleListen(btn, 'en-US');
-                    } else if (action === 'stop') {
-                        if (!RecordingService.isRecording && !SpeechService.isListening) return;
-                        const audioBlob = await RecordingService.stopRecording(btn);
-                        QuizSession.lastRecordingBlob = audioBlob;
-                        if(SpeechService.isListening) SpeechService.recognition.stop();
-                    }
-                },
-
+                startSession: (options) => { QuizSession = { ...options, dueQuestions: [], answeredThisSession: [], isAwaitingLevel: false, lastRecordingBlob: null }; let filtered = []; let categoryDisplay = options.category; if (options.category === 'all') { filtered = allUserQuestions; categoryDisplay = "ทั้งหมด"; } else if (options.category === 'due') { const now = new Date(); now.setHours(0, 0, 0, 0); filtered = allUserQuestions.filter(q => q.next_review_date.toDate() <= now); categoryDisplay = "ถึงกำหนดทวน"; } else if (options.category === 'custom_date') { const selectedDate = new Date(options.customDate + 'T00:00:00'); selectedDate.setHours(0, 0, 0, 0); filtered = allUserQuestions.filter(q => { const reviewDate = q.next_review_date.toDate(); reviewDate.setHours(0, 0, 0, 0); return reviewDate.getTime() === selectedDate.getTime(); }); categoryDisplay = `วันที่ ${selectedDate.toLocaleDateString('th-TH')}`; } else { filtered = allUserQuestions.filter(q => q.category === options.category); } QuizSession.dueQuestions = filtered.sort(() => Math.random() - 0.5); QuizSession.categoryDisplay = categoryDisplay; if (QuizSession.dueQuestions.length === 0) { showAlert('ไม่มีคำศัพท์ที่ตรงตามเงื่อนไขนี้', 'info'); return; } UI.renderTestPage(); },
+                nextCard: () => { QuizSession.lastRecordingBlob = null; document.getElementById('due-count-badge').textContent = `เหลือ: ${QuizSession.dueQuestions.length}`; const nextQ = QuizSession.dueQuestions.pop(); if (nextQ) { QuizSession.currentQuestion = nextQ; UI.displayCard(nextQ); } else { showAlert('ทบทวนรอบนี้เสร็จแล้ว!', 'success'); UI.renderMainMenu(); } },
                 handleSpeechInput: (transcript) => {
-                    // --- NEW: Sanitize function ---
-                    const cleanString = (str) => {
-                        if (!str) return "";
-                        return str.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"").replace(/s$/, "").trim();
-                    };
-
-                    if (QuizSession.isAwaitingLevel) {
-                        const thaiNumMap = { 'หนึ่ง': 1, 'สอง': 2, 'สาม': 3, 'สี่': 4, 'ห้า': 5 };
-                        const match = transcript.match(/(?:level|เลเวล|เลเวว)?\s*([1-5])/i);
-                        let level = null;
-                        if (match && match[1]) { level = parseInt(match[1], 10); } 
-                        else {
-                            for (const word in thaiNumMap) {
-                                if (transcript.includes(word)) { level = thaiNumMap[word]; break; }
-                            }
+                    showAlert(`คุณพูดว่า: "${transcript}"`, 'info');
+                    if (transcript.includes("อีกรอบ")) {
+                        const q = QuizSession.currentQuestion;
+                        if (q) {
+                            const isEnTh = QuizSession.direction === 'en-th';
+                            const text1 = isEnTh ? q.question : q.answer;
+                            const lang1 = isEnTh ? 'en-US' : 'th-TH';
+                            const text2 = isEnTh ? q.answer : q.question;
+                            const lang2 = isEnTh ? 'th-TH' : 'en-US';
+                            SpeechService.speakPair(text1, lang1, text2, lang2);
                         }
-                        if (level) { App.setReviewByLevel(level); } 
-                        else { showAlert('ไม่เข้าใจระดับที่เลือก กรุณาลองอีกครั้ง', 'warning'); }
                         return;
                     }
-
-                    if (QuizSession.mode === 'listen') {
-                        const matchLevel = transcript.match(/(?:level|เลเวล|เลเวว)?\s*([1-5])/i);
-                        if(matchLevel && matchLevel[1]) {
-                           App.setReviewByLevel(parseInt(matchLevel[1]));
-                        } else if (transcript.includes("อีกรอบ")) {
-                            const q = QuizSession.currentQuestion;
-                            if (q) SpeechService.speakPair(q.question, 'en-US', q.answer, 'th-TH');
-                        } else {
-                             showAlert('ไม่รู้จักคำสั่ง', 'warning');
-                        }
-                    } else if (QuizSession.mode === 'quiz') {
-                        const q = QuizSession.currentQuestion;
-                        const correctAnswer = q.question;
-                        const isCorrect = cleanString(transcript) === cleanString(correctAnswer);
-                        
-                        UI.showQuizResult(isCorrect, transcript);
+                    const match = transcript.match(/(?:level|เลเวล|เลเวว)?\s*([1-5])/i);
+                    if (match && match[1]) {
+                        const level = parseInt(match[1], 10);
+                        App.setReviewByLevel(level);
+                    } else {
+                        showAlert('ไม่รู้จักคำสั่ง', 'warning');
                     }
                 },
                 
+                handleRecording: async (event) => {
+                    const btn = event.currentTarget;
+                    const playBtn = document.getElementById('play-recording-btn');
+                    if (RecordingService.isRecording) {
+                        const audioBlob = await RecordingService.stopRecording(btn);
+                        if (audioBlob) {
+                            QuizSession.lastRecordingBlob = audioBlob;
+                            const audioUrl = URL.createObjectURL(audioBlob);
+                            playBtn.onclick = () => new Audio(audioUrl).play();
+                            playBtn.classList.remove('hidden');
+                        }
+                    } else {
+                        playBtn.classList.add('hidden');
+                        RecordingService.startRecording(btn);
+                    }
+                },
+
                 setReviewByLevel: async (level) => {
+                    document.querySelectorAll('#quiz-area button').forEach(b => b.disabled = true);
                     const q = QuizSession.currentQuestion;
                     if (!q) return;
-                    document.querySelectorAll('#quiz-area button').forEach(b => b.disabled = true);
-                    
+
                     if (QuizSession.lastRecordingBlob) {
                         try {
                             await IndexedDBService.addRecording(q.id, QuizSession.lastRecordingBlob);
                             showAlert('บันทึกเสียงลงในเบราว์เซอร์นี้แล้ว', 'success');
-                        } catch (err) { showAlert('ไม่สามารถบันทึกเสียงได้', 'danger'); }
+                        } catch (err) {
+                            showAlert('ไม่สามารถบันทึกเสียงได้', 'danger');
+                        }
                     }
 
                     const daysToAdd = LEVEL_TO_DAYS_MAP[level] || 1; 
