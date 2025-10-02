@@ -73,7 +73,6 @@
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { getFirestore, collection, doc, getDocs, addDoc, deleteDoc, updateDoc, Timestamp, query, limit, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
         const firebaseConfig = {
             apiKey: "AIzaSyDMmUxdlbAsjXdVr8JXfFV6zqVL2am9bwM",
             authDomain: "spaced-repetition-system-7ce8a.firebaseapp.com",
@@ -88,73 +87,26 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // --- ชุดคำถามเริ่มต้นสำหรับผู้ใช้ใหม่ ---
         const INITIAL_QUESTIONS = [
-            {
-                question: "A ___ is a device used to store electrical charge in a circuit.",
-                answer: "capacitor",
-                hint: "อุปกรณ์ที่ใช้เก็บประจุไฟฟ้าในวงจรอิเล็กทรอนิกส์",
-                category: "วิศวกรรม"
-            },
-            {
-                question: "A ___ is an electronic component with two terminals that conducts current primarily in one direction.",
-                answer: "diode",
-                hint: "อุปกรณ์อิเล็กทรอนิกส์ที่ควบคุมกระแสไฟฟ้าให้ไหลในทิศทางเดียว",
-                category: "วิศวกรรม"
-            },
-            {
-                question: "___ describes the relationship between voltage, current, and resistance.",
-                answer: "Ohm's law",
-                hint: "กฎของโอห์มคือความสัมพันธ์ระหว่างแรงดันไฟฟ้า กระแส และความต้านทาน",
-                category: "วิศวกรรม"
-            },
-            {
-                question: "The engineer used an ___ to measure the voltage across the component.",
-                answer: "oscilloscope",
-                hint: "วิศวกรใช้เครื่องออสซิลโลสโคปเพื่อวัดแรงดันไฟฟ้าคร่อมอุปกรณ์",
-                category: "วิศวกรรม"
-            },
-            {
-                question: "We use a ___ to limit the flow of current in a circuit.",
-                answer: "resistor",
-                hint: "เราใช้อุปกรณ์อะไรเพื่อจำกัดการไหลของกระแสในวงจรไฟฟ้า",
-                category: "วิศวกรรม"
-            }
+            { question: "A ___ is a device used to store electrical charge in a circuit.", answer: "capacitor", hint: "อุปกรณ์ที่ใช้เก็บประจุไฟฟ้าในวงจรอิเล็กทรอนิกส์", category: "วิศวกรรม" },
+            { question: "A ___ is an electronic component with two terminals that conducts current primarily in one direction.", answer: "diode", hint: "อุปกรณ์อิเล็กทรอนิกส์ที่ควบคุมกระแสไฟฟ้าให้ไหลในทิศทางเดียว", category: "วิศวกรรม" },
+            { question: "___ describes the relationship between voltage, current, and resistance.", answer: "Ohm's law", hint: "กฎของโอห์มคือความสัมพันธ์ระหว่างแรงดันไฟฟ้า กระแส และความต้านทาน", category: "วิศวกรรม" },
+            { question: "The engineer used an ___ to measure the voltage across the component.", answer: "oscilloscope", hint: "วิศวกรใช้เครื่องออสซิลโลสโคปเพื่อวัดแรงดันไฟฟ้าคร่อมอุปกรณ์", category: "วิศวกรรม" },
+            { question: "We use a ___ to limit the flow of current in a circuit.", answer: "resistor", hint: "เราใช้อุปกรณ์อะไรเพื่อจำกัดการไหลของกระแสในวงจรไฟฟ้า", category: "วิศวกรรม" }
         ];
 
         const FirebaseService = {
-            getQuestions: async (userId) => {
-                const qCollection = collection(db, 'users', userId, 'words');
-                const snapshot = await getDocs(qCollection);
-                return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-            },
-            addQuestion: (userId, data) => {
-                return addDoc(collection(db, 'users', userId, 'words'), data);
-            },
-            deleteQuestion: (userId, wordId) => {
-                return deleteDoc(doc(db, 'users', userId, 'words', wordId));
-            },
-            updateQuestion: (userId, wordId, data) => {
-                return updateDoc(doc(db, 'users', userId, 'words', wordId), data);
-            },
-            // --- ฟังก์ชันใหม่: เพิ่มข้อมูลเริ่มต้นให้ผู้ใช้ใหม่ ---
+            getQuestions: async (userId) => { const qCollection = collection(db, 'users', userId, 'words'); const snapshot = await getDocs(qCollection); return snapshot.docs.map(d => ({ id: d.id, ...d.data() })); },
+            addQuestion: (userId, data) => addDoc(collection(db, 'users', userId, 'words'), data),
+            deleteQuestion: (userId, wordId) => deleteDoc(doc(db, 'users', userId, 'words', wordId)),
+            updateQuestion: (userId, wordId, data) => updateDoc(doc(db, 'users', userId, 'words', wordId), data),
             async addInitialQuestionsForNewUser(userId) {
                 const wordsRef = collection(db, `users/${userId}/words`);
                 const checkQuery = query(wordsRef, limit(1));
                 const snapshot = await getDocs(checkQuery);
-                if (!snapshot.empty) return; // ถ้ามีข้อมูลอยู่แล้ว ให้ออก
-
-                console.log("New user detected. Seeding initial questions...");
+                if (!snapshot.empty) return;
                 const batch = writeBatch(db);
-                INITIAL_QUESTIONS.forEach(q => {
-                    const newWordRef = doc(wordsRef);
-                    batch.set(newWordRef, {
-                        ...q,
-                        srs_level: 0,
-                        next_review_date: Timestamp.now(),
-                        created_at: Timestamp.now()
-                    });
-                });
+                INITIAL_QUESTIONS.forEach(q => { const newWordRef = doc(wordsRef); batch.set(newWordRef, { ...q, srs_level: 0, next_review_date: Timestamp.now(), created_at: Timestamp.now() }); });
                 await batch.commit();
             }
         };
@@ -168,8 +120,6 @@
                 SpeechService.recognition.continuous = false;
                 SpeechService.recognition.interimResults = false;
                 SpeechService.recognition.onresult = (event) => App.handleSpeechInput(event.results[0][0].transcript.trim());
-                
-                // --- จุดที่แก้ไข: ปรับปรุงการจัดการข้อผิดพลาด ---
                 SpeechService.recognition.onerror = (event) => {
                     if (event.error === 'no-speech') {
                         const currentState = App.quizSession.currentState;
@@ -182,9 +132,7 @@
                                 SpeechService.listen(lang);
                             });
                         }
-                    } else {
-                        App.showAlert(`เกิดข้อผิดพลาดในการรับเสียง: ${event.error}`, 'danger');
-                    }
+                    } else { App.showAlert(`เกิดข้อผิดพลาดในการรับเสียง: ${event.error}`, 'danger'); }
                 };
                 SpeechService.recognition.onend = () => App.handleSpeechEnd();
             },
@@ -198,16 +146,20 @@
                     window.speechSynthesis.speak(utterance);
                 } else if (onEndCallback) { onEndCallback(); }
             },
-            cancelSpeech: () => {
-                if ('speechSynthesis' in window) {
-                    window.speechSynthesis.cancel();
-                }
-            },
+            cancelSpeech: () => { if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); } },
             listen: (lang) => {
-                if (!SpeechService.recognition || SpeechService.isListening) return;
+                if (!SpeechService.recognition) return;
+                if (SpeechService.isListening) {
+                    SpeechService.recognition.abort();
+                }
                 SpeechService.recognition.lang = lang;
                 SpeechService.isListening = true;
-                SpeechService.recognition.start();
+                try {
+                    SpeechService.recognition.start();
+                } catch (e) {
+                    console.error("Speech recognition start error:", e);
+                    SpeechService.isListening = false;
+                }
             },
         };
 
@@ -279,9 +231,7 @@
         };
 
         const App = {
-            currentUser: null,
-            allUserQuestions: [],
-            quizSession: {},
+            currentUser: null, allUserQuestions: [], quizSession: {},
             LEVEL_TO_MINUTES_MAP: { 1: 3, 2: 10, 3: 15, 4: 20, 5: 40 },
             
             init() {
@@ -293,9 +243,7 @@
                         this.allUserQuestions = await FirebaseService.getQuestions(user.uid);
                         SpeechService.init();
                         this.render('main-menu');
-                    } else {
-                        this.render('login');
-                    }
+                    } else { this.render('login'); }
                 });
                 this.bindAuthEvents();
             },
@@ -313,12 +261,9 @@
                 document.getElementById('login-section').classList.add('hidden');
                 document.getElementById('register-section').classList.add('hidden');
                 appRoot.classList.add('hidden');
-
-                if (page === 'login') {
-                    document.getElementById('login-section').classList.remove('hidden');
-                } else if (page === 'register') {
-                    document.getElementById('register-section').classList.remove('hidden');
-                } else {
+                if (page === 'login') { document.getElementById('login-section').classList.remove('hidden'); } 
+                else if (page === 'register') { document.getElementById('register-section').classList.remove('hidden'); } 
+                else {
                     appRoot.classList.remove('hidden');
                     const template = document.getElementById(`template-${page}`).content.cloneNode(true);
                     appRoot.appendChild(template);
@@ -329,10 +274,7 @@
             bindPageEvents(page) {
                 if (page === 'main-menu') {
                     document.getElementById('welcome-message').textContent = `ยินดีต้อนรับ, ${this.currentUser.email}`;
-                    document.getElementById('logout-btn').addEventListener('click', () => {
-                        SpeechService.cancelSpeech();
-                        signOut(auth);
-                    });
+                    document.getElementById('logout-btn').addEventListener('click', () => { SpeechService.cancelSpeech(); signOut(auth); });
                     document.getElementById('start-new-btn').addEventListener('click', () => this.showStartSessionModal());
                     document.getElementById('manage-btn').addEventListener('click', () => this.render('manage'));
                     document.getElementById('dashboard-btn').addEventListener('click', () => this.render('dashboard'));
@@ -341,14 +283,7 @@
                     this.renderManageList();
                     document.getElementById('add-form').addEventListener('submit', async (e) => {
                         e.preventDefault();
-                        await FirebaseService.addQuestion(this.currentUser.uid, { 
-                            question: e.target.elements['new-question'].value, 
-                            answer: e.target.elements['new-answer-word'].value, 
-                            hint: e.target.elements['new-hint'].value, 
-                            category: e.target.elements['new-category'].value, 
-                            srs_level: 0, 
-                            next_review_date: Timestamp.now() 
-                        });
+                        await FirebaseService.addQuestion(this.currentUser.uid, { question: e.target.elements['new-question'].value, answer: e.target.elements['new-answer-word'].value, hint: e.target.elements['new-hint'].value, category: e.target.elements['new-category'].value, srs_level: 0, next_review_date: Timestamp.now() });
                         this.showAlert('เพิ่มข้อมูลสำเร็จ!');
                         this.allUserQuestions = await FirebaseService.getQuestions(this.currentUser.uid);
                         this.renderManageList();
@@ -356,9 +291,7 @@
                     });
                     document.getElementById('reset-data-btn').addEventListener('click', async () => {
                         if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลทั้งหมด? การกระทำนี้ไม่สามารถย้อนกลับได้')) {
-                            for (const q of this.allUserQuestions) {
-                                await FirebaseService.deleteQuestion(this.currentUser.uid, q.id);
-                            }
+                            for (const q of this.allUserQuestions) { await FirebaseService.deleteQuestion(this.currentUser.uid, q.id); }
                             this.showAlert('รีเซ็ตข้อมูลทั้งหมดแล้ว', 'success');
                             this.allUserQuestions = [];
                             this.renderManageList();
@@ -375,18 +308,24 @@
                 const now = new Date();
                 const dueCount = this.allUserQuestions.filter(q => q.next_review_date.toDate() <= now).length;
                 document.getElementById('due-for-review').textContent = dueCount;
-                const categoryCounts = this.allUserQuestions.reduce((acc, q) => {
-                    acc[q.category] = (acc[q.category] || 0) + 1;
-                    return acc;
-                }, {});
-                new Chart(document.getElementById('categoryChart').getContext('2d'), {
-                    type: 'pie',
-                    data: {
-                        labels: Object.keys(categoryCounts),
-                        datasets: [{ data: Object.values(categoryCounts), backgroundColor: Object.keys(categoryCounts).map((_, i) => `hsl(${i * 60}, 70%, 70%)`), hoverOffset: 4 }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
-                });
+                const categoryCounts = this.allUserQuestions.reduce((acc, q) => { acc[q.category] = (acc[q.category] || 0) + 1; return acc; }, {});
+                new Chart(document.getElementById('categoryChart').getContext('2d'), { type: 'pie', data: { labels: Object.keys(categoryCounts), datasets: [{ data: Object.values(categoryCounts), backgroundColor: Object.keys(categoryCounts).map((_, i) => `hsl(${i * 60}, 70%, 70%)`), hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } } });
+            },
+            
+            formatTimeUntilNextReview(timestamp) {
+                if (!timestamp || typeof timestamp.toDate !== 'function') return '';
+                const futureDate = timestamp.toDate();
+                const now = new Date();
+                const diffMs = futureDate.getTime() - now.getTime();
+                if (diffMs <= 0) { return `<span class="badge bg-warning">0 วินาที</span>`; }
+                const diffSecs = Math.ceil(diffMs / 1000);
+                const diffMins = Math.ceil(diffMs / (1000 * 60));
+                const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
+                const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                if (diffSecs < 60) return `<span class="badge bg-secondary">${diffSecs} วินาที</span>`;
+                if (diffMins < 60) return `<span class="badge bg-secondary">${diffMins} นาที</span>`;
+                if (diffHours < 24) return `<span class="badge bg-secondary">${diffHours} ชั่วโมง</span>`;
+                return `<span class="badge bg-secondary">${diffDays} วัน</span>`;
             },
 
             async renderManageList() {
@@ -394,11 +333,10 @@
                 if (!listContainer) return;
                 listContainer.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
                 if (this.allUserQuestions.length === 0) { listContainer.innerHTML = '<p class="text-center text-muted">ยังไม่มีข้อมูล</p>'; return; }
-                const now = new Date();
                 let tableHTML = `<table class="table table-striped table-hover"><thead><tr><th>ประโยค / คำใบ้</th><th>สถานะ</th><th class="text-end">จัดการ</th></tr></thead><tbody>`;
                 this.allUserQuestions.sort((a,b)=>a.question.localeCompare(b.question)).forEach(q => {
-                    const due = q.next_review_date.toDate() <= now;
-                    tableHTML += `<tr><td>${q.question.replace('___', `<strong>${q.answer}</strong>`)}<br><small class="text-muted">${q.hint}</small><br><small class="text-info">${q.category}</small></td><td><span class="badge bg-info">Lv. ${q.srs_level}</span> ${due ? `<span class="badge bg-warning">ถึงรอบทวน</span>` : ''}</td><td class="text-end"><button class="btn btn-sm btn-info recording-history-btn" data-word-id="${q.id}" data-word-q="${q.answer}"><i class="bi bi-clock-history"></i></button> <button class="btn btn-sm btn-danger delete-btn" data-id="${q.id}">ลบ</button></td></tr>`;
+                    const timeStatusBadge = this.formatTimeUntilNextReview(q.next_review_date);
+                    tableHTML += `<tr><td>${q.question.replace('___', `<strong>${q.answer}</strong>`)}<br><small class="text-muted">${q.hint}</small><br><small class="text-info">${q.category}</small></td><td><span class="badge bg-info">Lv. ${q.srs_level}</span> ${timeStatusBadge}</td><td class="text-end"><button class="btn btn-sm btn-info recording-history-btn" data-word-id="${q.id}" data-word-q="${q.answer}"><i class="bi bi-clock-history"></i></button> <button class="btn btn-sm btn-danger delete-btn" data-id="${q.id}">ลบ</button></td></tr>`;
                 });
                 listContainer.innerHTML = tableHTML + `</tbody></table>`;
                 listContainer.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', async (e) => { if (confirm('ยืนยันการลบ?')) { await FirebaseService.deleteQuestion(this.currentUser.uid, e.currentTarget.dataset.id); this.showAlert('ลบข้อมูลแล้ว', 'warning'); this.allUserQuestions = await FirebaseService.getQuestions(this.currentUser.uid); this.renderManageList(); } }));
@@ -412,10 +350,7 @@
                 categories.forEach(cat => categorySelect.add(new Option(`เฉพาะหมวดหมู่: ${cat}`, cat)));
                 const modal = new bootstrap.Modal(document.getElementById('startSessionModal'));
                 modal.show();
-                document.getElementById('confirm-start-btn').onclick = () => {
-                    modal.hide();
-                    this.startSession({ category: categorySelect.value });
-                };
+                document.getElementById('confirm-start-btn').onclick = () => { modal.hide(); this.startSession({ category: categorySelect.value }); };
             },
 
             startSession(options) {
@@ -432,7 +367,6 @@
                 SpeechService.cancelSpeech();
                 const badge = document.getElementById('due-count-badge');
                 if (badge) badge.textContent = `เหลือ: ${this.quizSession.dueQuestions.length}`;
-                
                 const nextQ = this.quizSession.dueQuestions.pop();
                 if (nextQ) {
                     this.quizSession.currentQuestion = nextQ;
@@ -447,14 +381,8 @@
             runCardSequence(q, step, data = {}) {
                 const quizArea = document.getElementById('quiz-area');
                 if (!quizArea) return;
-
                 if (step === 'ask') {
-                    quizArea.innerHTML = `<div class="my-4 p-3">
-                        <p class="fs-5 text-muted">เติมคำในช่องว่าง:</p>
-                        <h2 class="display-6 my-3">${q.question}</h2>
-                        <i class="bi bi-mic-fill fs-1"></i>
-                        <p id="status-text" class="text-muted mt-2">กำลังพูดคำใบ้...</p>
-                    </div>`;
+                    quizArea.innerHTML = `<div class="my-4 p-3"><p class="fs-5 text-muted">เติมคำในช่องว่าง:</p><h2 class="display-6 my-3">${q.question}</h2><i class="bi bi-mic-fill fs-1"></i><p id="status-text" class="text-muted mt-2">กำลังพูดคำใบ้...</p></div>`;
                     SpeechService.speak(q.hint, 'th-TH', () => {
                         SpeechService.speak('กรุณาพูดคำตอบครับ', 'th-TH', () => {
                             document.getElementById('status-text').textContent = 'กำลังฟังคำตอบ...';
@@ -466,13 +394,7 @@
                     });
                 } else if (step === 'feedback') {
                     const fullSentence = q.question.replace('___', `<strong>${q.answer}</strong>`);
-                    quizArea.innerHTML = `<div class="my-4 p-3">
-                        <h2 class="${data.isCorrect ? "text-success" : "text-danger"}">${data.isCorrect ? "ถูกต้อง!" : "ยังไม่ถูกต้อง"}</h2>
-                        <p class="text-muted">คุณตอบว่า: <strong class="text-dark">"${data.transcript || '...'}"</strong></p><hr>
-                        <p class="mt-3">ประโยคที่สมบูรณ์คือ:</p><h4 class="mt-3">${fullSentence}</h4>
-                        <i class="bi bi-mic-fill fs-1 mt-4"></i>
-                        <p id="status-text" class="text-muted mt-2">กำลังพูดเฉลย...</p>
-                    </div>`;
+                    quizArea.innerHTML = `<div class="my-4 p-3"><h2 class="${data.isCorrect ? "text-success" : "text-danger"}">${data.isCorrect ? "ถูกต้อง!" : "ยังไม่ถูกต้อง"}</h2><p class="text-muted">คุณตอบว่า: <strong class="text-dark">"${data.transcript || '...'}"</strong></p><hr><p class="mt-3">ประโยคที่สมบูรณ์คือ:</p><h4 class="mt-3">${fullSentence}</h4><i class="bi bi-mic-fill fs-1 mt-4"></i><p id="status-text" class="text-muted mt-2">กำลังพูดเฉลย...</p></div>`;
                     SpeechService.speak(q.question.replace('___', q.answer), 'en-US', () => {
                         SpeechService.speak('คุณจำได้ดีแค่ไหน? กรุณาบอกเลเวล 1 ถึง 5', 'th-TH', () => {
                             document.getElementById('status-text').textContent = 'กรุณาบอกเลเวล 1 ถึง 5...';
@@ -494,19 +416,34 @@
                     const isCorrect = cleanString(transcript) === cleanString(q.answer);
                     if (!isCorrect) this.quizSession.lastRecordingBlob = null;
                     this.runCardSequence(q, 'feedback', { isCorrect, transcript });
-
-                } else if (this.quizSession.currentState === 'AWAITING_LEVEL') {
-                    const thaiNumMap = { 'หนึ่ง': 1, 'สอง': 2, 'สาม': 3, 'สี่': 4, 'ห้า': 5 };
-                    let level = null;
-                    const match = transcript.match(/(?:level|เลเวล|เลเวว)?\s*([1-5])/i);
-                    if (match?.[1]) { level = parseInt(match[1], 10); }
-                    else { for (const word in thaiNumMap) if (transcript.includes(word)) { level = thaiNumMap[word]; break; } }
-                    
-                    if (level) {
-                        this.setReviewByLevel(level);
+                } 
+                else if (this.quizSession.currentState === 'AWAITING_LEVEL') {
+                    this.showAlert(`ได้ยินว่า: "${transcript}"`, 'info');
+                    const levelMap = { 'หนึ่ง': 1, 'one': 1, 'สอง': 2, 'two': 2, 'สาม': 3, 'three': 3, 'สี่': 4, 'four': 4, 'ห้า': 5, 'five': 5 };
+                    let foundLevel = null;
+                    const cleanTranscript = transcript.toLowerCase().trim();
+                    const digitMatch = cleanTranscript.match(/[1-5]/);
+                    if (digitMatch) {
+                        foundLevel = parseInt(digitMatch[0], 10);
                     } else {
-                        SpeechService.speak('ไม่เข้าใจระดับที่เลือก กรุณาบอกเลเวล 1 ถึง 5 อีกครั้งครับ', 'th-TH', () => {
+                        for (const key in levelMap) {
+                            const wordRegex = new RegExp(`\\b${key}\\b`);
+                            if (wordRegex.test(cleanTranscript)) {
+                                foundLevel = levelMap[key];
+                                break;
+                            }
+                        }
+                    }
+
+                    if (foundLevel) {
+                        this.setReviewByLevel(foundLevel);
+                    } else {
+                        SpeechService.speak('ไม่เข้าใจระดับที่เลือก กรุณาลองอีกครั้งครับ', 'th-TH', () => {
                             this.quizSession.currentState = 'AWAITING_LEVEL';
+                            const micIcon = document.querySelector('#quiz-area .bi-mic-fill');
+                            if (micIcon) micIcon.classList.add('mic-listening');
+                            const statusText = document.getElementById('status-text');
+                            if(statusText) statusText.textContent = 'กำลังฟัง...';
                             SpeechService.listen('th-TH');
                         });
                     }
@@ -539,24 +476,18 @@
                 this.quizSession.currentState = null;
                 const q = this.quizSession.currentQuestion;
                 if (!q) return;
-
                 const quizArea = document.getElementById('quiz-area');
                 quizArea.innerHTML = `<div class="my-4 p-3"><p class="fs-5 text-muted">บันทึก Level ${level} แล้ว...</p><div class="spinner-border my-3" role="status"></div></div>`;
-
                 if (this.quizSession.lastRecordingBlob) {
-                    try {
-                        await IndexedDBService.addRecording(q.id, this.quizSession.lastRecordingBlob);
-                    } catch (err) { this.showAlert('ไม่สามารถบันทึกเสียงได้', 'danger'); }
+                    try { await IndexedDBService.addRecording(q.id, this.quizSession.lastRecordingBlob); } 
+                    catch (err) { this.showAlert('ไม่สามารถบันทึกเสียงได้', 'danger'); }
                 }
-
                 const nextReviewDate = new Date();
                 const minutesToAdd = this.LEVEL_TO_MINUTES_MAP[level] || 1;
                 nextReviewDate.setMinutes(nextReviewDate.getMinutes() + minutesToAdd);
-                
                 await FirebaseService.updateQuestion(this.currentUser.uid, q.id, { srs_level: level, next_review_date: Timestamp.fromDate(nextReviewDate) });
                 const qIndex = this.allUserQuestions.findIndex(item => item.id === q.id);
                 if (qIndex > -1) this.allUserQuestions[qIndex] = {...this.allUserQuestions[qIndex], srs_level: level, next_review_date: Timestamp.fromDate(nextReviewDate)};
-                
                 setTimeout(() => this.nextCard(), 1000);
             },
             
