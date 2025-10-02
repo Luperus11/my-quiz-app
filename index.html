@@ -71,7 +71,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, collection, doc, getDocs, addDoc, deleteDoc, updateDoc, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, collection, doc, getDocs, addDoc, deleteDoc, updateDoc, Timestamp, query, limit, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // For Firebase JS SDK v7.20.0 and later, measurementId is optional
         const firebaseConfig = {
@@ -88,7 +88,77 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        const FirebaseService = { getQuestions: async (userId) => { const qCollection = collection(db, 'users', userId, 'words'); const snapshot = await getDocs(qCollection); return snapshot.docs.map(d => ({ id: d.id, ...d.data() })); }, addQuestion: (userId, data) => addDoc(collection(db, 'users', userId, 'words'), data), deleteQuestion: (userId, wordId) => deleteDoc(doc(db, 'users', userId, 'words', wordId)), updateQuestion: (userId, wordId, data) => updateDoc(doc(db, 'users', userId, 'words', wordId), data) };
+        // --- ชุดคำถามเริ่มต้นสำหรับผู้ใช้ใหม่ ---
+        const INITIAL_QUESTIONS = [
+            {
+                question: "A ___ is a device used to store electrical charge in a circuit.",
+                answer: "capacitor",
+                hint: "อุปกรณ์ที่ใช้เก็บประจุไฟฟ้าในวงจรอิเล็กทรอนิกส์",
+                category: "วิศวกรรม"
+            },
+            {
+                question: "A ___ is an electronic component with two terminals that conducts current primarily in one direction.",
+                answer: "diode",
+                hint: "อุปกรณ์อิเล็กทรอนิกส์ที่ควบคุมกระแสไฟฟ้าให้ไหลในทิศทางเดียว",
+                category: "วิศวกรรม"
+            },
+            {
+                question: "___ describes the relationship between voltage, current, and resistance.",
+                answer: "Ohm's law",
+                hint: "กฎของโอห์มคือความสัมพันธ์ระหว่างแรงดันไฟฟ้า กระแส และความต้านทาน",
+                category: "วิศวกรรม"
+            },
+            {
+                question: "The engineer used an ___ to measure the voltage across the component.",
+                answer: "oscilloscope",
+                hint: "วิศวกรใช้เครื่องออสซิลโลสโคปเพื่อวัดแรงดันไฟฟ้าคร่อมอุปกรณ์",
+                category: "วิศวกรรม"
+            },
+            {
+                question: "We use a ___ to limit the flow of current in a circuit.",
+                answer: "resistor",
+                hint: "เราใช้อุปกรณ์อะไรเพื่อจำกัดการไหลของกระแสในวงจรไฟฟ้า",
+                category: "วิศวกรรม"
+            }
+        ];
+
+        const FirebaseService = {
+            getQuestions: async (userId) => {
+                const qCollection = collection(db, 'users', userId, 'words');
+                const snapshot = await getDocs(qCollection);
+                return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            },
+            addQuestion: (userId, data) => {
+                return addDoc(collection(db, 'users', userId, 'words'), data);
+            },
+            deleteQuestion: (userId, wordId) => {
+                return deleteDoc(doc(db, 'users', userId, 'words', wordId));
+            },
+            updateQuestion: (userId, wordId, data) => {
+                return updateDoc(doc(db, 'users', userId, 'words', wordId), data);
+            },
+            // --- ฟังก์ชันใหม่: เพิ่มข้อมูลเริ่มต้นให้ผู้ใช้ใหม่ ---
+            async addInitialQuestionsForNewUser(userId) {
+                const wordsRef = collection(db, `users/${userId}/words`);
+                const checkQuery = query(wordsRef, limit(1));
+                const snapshot = await getDocs(checkQuery);
+                if (!snapshot.empty) return; // ถ้ามีข้อมูลอยู่แล้ว ให้ออก
+
+                console.log("New user detected. Seeding initial questions...");
+                const batch = writeBatch(db);
+                INITIAL_QUESTIONS.forEach(q => {
+                    const newWordRef = doc(wordsRef);
+                    batch.set(newWordRef, {
+                        ...q,
+                        srs_level: 0,
+                        next_review_date: Timestamp.now(),
+                        created_at: Timestamp.now()
+                    });
+                });
+                await batch.commit();
+            }
+        };
+
         const SpeechService = {
             recognition: null, isListening: false,
             init: () => {
@@ -98,11 +168,23 @@
                 SpeechService.recognition.continuous = false;
                 SpeechService.recognition.interimResults = false;
                 SpeechService.recognition.onresult = (event) => App.handleSpeechInput(event.results[0][0].transcript.trim());
-                 SpeechService.recognition.onerror = (event) => {
-                    if (event.error !== 'no-speech') {
-                       App.showAlert(`เกิดข้อผิดพลาด: ${event.error}`, 'danger');
+                
+                // --- จุดที่แก้ไข: ปรับปรุงการจัดการข้อผิดพลาด ---
+                SpeechService.recognition.onerror = (event) => {
+                    if (event.error === 'no-speech') {
+                        const currentState = App.quizSession.currentState;
+                        if (currentState === 'AWAITING_ANSWER' || currentState === 'AWAITING_LEVEL') {
+                            SpeechService.speak('ไม่ได้ยินเสียงตอบกลับ กรุณาลองอีกครั้งครับ', 'th-TH', () => {
+                                const lang = (currentState === 'AWAITING_ANSWER') ? 'en-US' : 'th-TH';
+                                const micIcon = document.querySelector('#quiz-area .bi-mic-fill');
+                                if (micIcon) micIcon.classList.add('mic-listening');
+                                if(document.getElementById('status-text')) document.getElementById('status-text').textContent = 'กำลังฟัง...';
+                                SpeechService.listen(lang);
+                            });
+                        }
+                    } else {
+                        App.showAlert(`เกิดข้อผิดพลาดในการรับเสียง: ${event.error}`, 'danger');
                     }
-                    App.handleSpeechEnd();
                 };
                 SpeechService.recognition.onend = () => App.handleSpeechEnd();
             },
@@ -128,6 +210,7 @@
                 SpeechService.recognition.start();
             },
         };
+
         const RecordingService = {
             mediaRecorder: null, audioChunks: [], isRecording: false, stream: null,
             startRecording: async () => {
@@ -157,6 +240,7 @@
                 });
             }
         };
+
         const IndexedDBService = {
             db: null,
             init: () => {
@@ -198,13 +282,14 @@
             currentUser: null,
             allUserQuestions: [],
             quizSession: {},
-            LEVEL_TO_MINUTES_MAP: { 1: 3, 2: 10, 3: 15, 4: 20, 5: 40 }, // 1 นาที, 10 นาที, 1 ชั่วโมง, 4 ชั่วโมง, 24 ชั่วโมง
+            LEVEL_TO_MINUTES_MAP: { 1: 3, 2: 10, 3: 15, 4: 20, 5: 40 },
             
             init() {
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         this.currentUser = user;
                         await IndexedDBService.init();
+                        await FirebaseService.addInitialQuestionsForNewUser(user.uid);
                         this.allUserQuestions = await FirebaseService.getQuestions(user.uid);
                         SpeechService.init();
                         this.render('main-menu');
