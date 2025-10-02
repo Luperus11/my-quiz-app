@@ -13,7 +13,7 @@
         .card { border: none; border-radius: 0.75rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
         #alert-container { position: fixed; top: 1rem; right: 1rem; z-index: 1055; min-width: 250px; }
         .hidden { display: none !important; }
-        .mic-listening, .mic-recording { color: #fff; background-color: #dc3545; animation: pulse 1.5s infinite; }
+        .mic-listening { color: #dc3545; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); } 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); } }
     </style>
 </head>
@@ -51,10 +51,10 @@
                 <div class="modal-header"><h5 class="modal-title">เริ่มรอบทบทวน</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="category-select" class="form-label">เลือกชุดคำศัพท์</label>
+                        <label for="category-select" class="form-label">เลือกชุดข้อมูล</label>
                         <select id="category-select" class="form-select">
                             <option value="all">ทบทวนทั้งหมด</option>
-                            <option value="due">เฉพาะที่ถึงรอบทวน (วันนี้)</option>
+                            <option value="due">เฉพาะที่ถึงรอบทวน</option>
                         </select>
                     </div>
                 </div>
@@ -64,9 +64,9 @@
     </div>
 
     <template id="template-main-menu"><div class="card"><div class="card-body"><div class="d-flex justify-content-between align-items-center mb-4"><h5 class="mb-0" id="welcome-message"></h5><button id="logout-btn" class="btn btn-sm btn-outline-danger">ออกจากระบบ</button></div><div class="text-center p-2"><h1 class="text-primary mb-3">เว็บทบทวนคำศัพท์</h1><p class="text-muted mb-4">เลือกเมนูเพื่อเริ่มต้น</p><div class="d-grid gap-3"><button id="start-new-btn" class="btn btn-primary btn-lg"><i class="bi bi-stars"></i> เริ่มรอบทบทวน</button><button id="manage-btn" class="btn btn-outline-secondary"><i class="bi bi-gear-fill"></i> จัดการข้อมูล</button><button id="dashboard-btn" class="btn btn-outline-info"><i class="bi bi-graph-up"></i> ดูสถิติ</button></div></div></div></div></template>
-    <template id="template-test"><div class="card"><div class="card-header bg-primary text-white d-flex justify-content-between align-items-center"><h3 class="fs-5 mb-0"><i class="bi bi-earbuds"></i> โหมดฝึกหัด</h3><span id="due-count-badge" class="badge bg-light text-dark"></span></div><div class="card-body text-center" id="quiz-area"></div></div></template>
-    <template id="template-manage"><button id="back-to-menu-btn" class="btn btn-secondary mb-3 w-100"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button><div class="card mb-4"><div class="card-header bg-info text-white"><h5><i class="bi bi-plus-circle-fill"></i> เพิ่มคำศัพท์ใหม่</h5></div><div class="card-body"><form id="add-form"><div class="mb-3"><label for="new-question" class="form-label">คำศัพท์ (อังกฤษ)</label><input type="text" id="new-question" class="form-control" required></div><div class="mb-3"><label for="new-answer" class="form-label">คำแปล (ไทย)</label><input type="text" id="new-answer" class="form-control" required></div><div class="mb-3"><label for="new-category" class="form-label">หมวดหมู่</label><input type="text" id="new-category" class="form-control" required></div><button type="submit" class="btn btn-success w-100">เพิ่มคำศัพท์</button></form></div></div><div class="card"><div class="card-header bg-secondary text-white"><h5><i class="bi bi-card-list"></i> คลังคำศัพท์ทั้งหมด</h5></div><div class="card-body"><div id="questions-list" class="table-responsive"></div></div></div></template>
-    <template id="template-dashboard"><button id="back-to-menu-btn" class="btn btn-secondary mb-3 w-100"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button><div class="card mb-4"><div class="card-header bg-primary text-white"><h5><i class="bi bi-speedometer2"></i> แดชบอร์ดสรุปผล</h5></div><div class="card-body"><div class="row text-center mb-4"><div class="col"><h4 class="mb-0 text-primary" id="total-questions">0</h4><small class="text-muted">คำศัพท์ทั้งหมด</small></div><div class="col"><h4 class="mb-0 text-warning" id="due-for-review">0</h4><small class="text-muted">ถึงรอบทวน</small></div></div><hr><h6 class="mb-3">สัดส่วนคำศัพท์ตามหมวดหมู่</h6><div style="position: relative; height:300px; width:100%"><canvas id="categoryChart"></canvas></div></div></div></template>
+    <template id="template-test"><div class="card"><div class="card-header bg-primary text-white d-flex justify-content-between align-items-center"><h3 class="fs-5 mb-0"><i class="bi bi-robot"></i> Voice-Guided Mode</h3><span id="due-count-badge" class="badge bg-light text-dark"></span></div><div class="card-body text-center" id="quiz-area"></div></div></template>
+    <template id="template-manage"><button id="back-to-menu-btn" class="btn btn-secondary mb-3 w-100"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button><div class="card mb-4"><div class="card-header bg-info text-white"><h5><i class="bi bi-plus-circle-fill"></i> เพิ่มข้อมูลใหม่ (คำศัพท์หรือประโยค)</h5></div><div class="card-body"><form id="add-form"><div class="mb-3"><label for="new-question" class="form-label">ประโยค (อังกฤษ, เว้นด้วย ___)</label><input type="text" id="new-question" class="form-control" placeholder="เช่น The ___ stores electrical energy." required></div><div class="mb-3"><label for="new-answer-word" class="form-label">คำตอบ (ที่เติมในช่องว่าง)</label><input type="text" id="new-answer-word" class="form-control" placeholder="เช่น capacitor" required></div><div class="mb-3"><label for="new-hint" class="form-label">ประโยคคำใบ้ (ไทย)</label><input type="text" id="new-hint" class="form-control" placeholder="เช่น ตัวเก็บประจุใช้เก็บพลังงานไฟฟ้า" required></div><div class="mb-3"><label for="new-category" class="form-label">หมวดหมู่</label><input type="text" id="new-category" class="form-control" required></div><button type="submit" class="btn btn-success w-100">เพิ่มข้อมูล</button></form></div></div><div class="card"><div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center"><h5><i class="bi bi-card-list"></i> คลังข้อมูลทั้งหมด</h5><button id="reset-data-btn" class="btn btn-danger btn-sm"><i class="bi bi-trash3-fill"></i> รีเซ็ตข้อมูลทั้งหมด</button></div><div class="card-body"><div id="questions-list" class="table-responsive"></div></div></div></template>
+    <template id="template-dashboard"><button id="back-to-menu-btn" class="btn btn-secondary mb-3 w-100"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button><div class="card mb-4"><div class="card-header bg-primary text-white"><h5><i class="bi bi-speedometer2"></i> แดชบอร์ดสรุปผล</h5></div><div class="card-body"><div class="row text-center mb-4"><div class="col"><h4 class="mb-0 text-primary" id="total-questions">0</h4><small class="text-muted">ข้อมูลทั้งหมด</small></div><div class="col"><h4 class="mb-0 text-warning" id="due-for-review">0</h4><small class="text-muted">ถึงรอบทวน</small></div></div><hr><h6 class="mb-3">สัดส่วนข้อมูลตามหมวดหมู่</h6><div style="position: relative; height:300px; width:100%"><canvas id="categoryChart"></canvas></div></div></div></template>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -98,37 +98,39 @@
                 SpeechService.recognition.continuous = false;
                 SpeechService.recognition.interimResults = false;
                 SpeechService.recognition.onresult = (event) => App.handleSpeechInput(event.results[0][0].transcript.trim());
+                 SpeechService.recognition.onerror = (event) => {
+                    if (event.error !== 'no-speech') {
+                       App.showAlert(`เกิดข้อผิดพลาด: ${event.error}`, 'danger');
+                    }
+                    App.handleSpeechEnd();
+                };
+                SpeechService.recognition.onend = () => App.handleSpeechEnd();
             },
             speak: (text, lang, onEndCallback = null) => {
                 if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
                     const utterance = new SpeechSynthesisUtterance(text);
                     utterance.lang = lang;
-                    utterance.rate = (lang === 'th-TH') ? 0.8 : 1.0;
+                    utterance.rate = (lang === 'th-TH') ? 0.9 : 1.0;
                     if (onEndCallback) utterance.onend = onEndCallback;
                     window.speechSynthesis.speak(utterance);
                 } else if (onEndCallback) { onEndCallback(); }
             },
-            speakPair: (text1, lang1, text2, lang2) => {
-                if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-                SpeechService.speak(text1, lang1, () => setTimeout(() => SpeechService.speak(text2, lang2), 400));
-            },
-            stopListening: () => {
-                if (SpeechService.recognition && SpeechService.isListening) {
-                    SpeechService.recognition.stop();
+            cancelSpeech: () => {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
                 }
             },
-            toggleListen: (btn, lang) => {
-                if (!SpeechService.recognition) return App.showAlert('เบราว์เซอร์ไม่รองรับการพูด', 'warning');
+            listen: (lang) => {
+                if (!SpeechService.recognition || SpeechService.isListening) return;
                 SpeechService.recognition.lang = lang;
-                if (SpeechService.isListening) return SpeechService.recognition.stop();
+                SpeechService.isListening = true;
                 SpeechService.recognition.start();
-                SpeechService.recognition.onstart = () => { SpeechService.isListening = true; btn.classList.add('mic-listening'); };
-                SpeechService.recognition.onend = () => { SpeechService.isListening = false; btn.classList.remove('mic-listening'); };
-            }
+            },
         };
         const RecordingService = {
             mediaRecorder: null, audioChunks: [], isRecording: false, stream: null,
-            startRecording: async (btn) => {
+            startRecording: async () => {
                 if (RecordingService.isRecording) return;
                 if (!navigator.mediaDevices?.getUserMedia) return App.showAlert('เบราว์เซอร์ไม่รองรับการอัดเสียง', 'danger');
                 try {
@@ -139,10 +141,9 @@
                     RecordingService.mediaRecorder.ondataavailable = event => RecordingService.audioChunks.push(event.data);
                     RecordingService.mediaRecorder.start();
                     RecordingService.isRecording = true;
-                    if (btn) btn.classList.add('mic-recording');
                 } catch (err) { App.showAlert('ไม่สามารถเข้าถึงไมโครโฟนได้', 'danger'); }
             },
-            stopRecording: (btn) => {
+            stopRecording: () => {
                 return new Promise(resolve => {
                     if (!RecordingService.mediaRecorder || RecordingService.mediaRecorder.state === "inactive") return resolve(null);
                     RecordingService.mediaRecorder.onstop = () => {
@@ -150,7 +151,6 @@
                         RecordingService.stream?.getTracks().forEach(track => track.stop());
                         RecordingService.stream = null;
                         RecordingService.isRecording = false;
-                        if (btn) btn.classList.remove('mic-recording');
                         resolve(audioBlob);
                     };
                     RecordingService.mediaRecorder.stop();
@@ -198,7 +198,7 @@
             currentUser: null,
             allUserQuestions: [],
             quizSession: {},
-            LEVEL_TO_DAYS_MAP: { 1: 1, 2: 3, 3: 7, 4: 15, 5: 30 },
+            LEVEL_TO_MINUTES_MAP: { 1: 3, 2: 10, 3: 15, 4: 20, 5: 40 }, // 1 นาที, 10 นาที, 1 ชั่วโมง, 4 ชั่วโมง, 24 ชั่วโมง
             
             init() {
                 onAuthStateChanged(auth, async (user) => {
@@ -244,7 +244,10 @@
             bindPageEvents(page) {
                 if (page === 'main-menu') {
                     document.getElementById('welcome-message').textContent = `ยินดีต้อนรับ, ${this.currentUser.email}`;
-                    document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+                    document.getElementById('logout-btn').addEventListener('click', () => {
+                        SpeechService.cancelSpeech();
+                        signOut(auth);
+                    });
                     document.getElementById('start-new-btn').addEventListener('click', () => this.showStartSessionModal());
                     document.getElementById('manage-btn').addEventListener('click', () => this.render('manage'));
                     document.getElementById('dashboard-btn').addEventListener('click', () => this.render('dashboard'));
@@ -253,11 +256,28 @@
                     this.renderManageList();
                     document.getElementById('add-form').addEventListener('submit', async (e) => {
                         e.preventDefault();
-                        await FirebaseService.addQuestion(this.currentUser.uid, { question: e.target.elements['new-question'].value, answer: e.target.elements['new-answer'].value, category: e.target.elements['new-category'].value, srs_level: 0, next_review_date: Timestamp.now() });
-                        this.showAlert('เพิ่มคำศัพท์สำเร็จ!');
+                        await FirebaseService.addQuestion(this.currentUser.uid, { 
+                            question: e.target.elements['new-question'].value, 
+                            answer: e.target.elements['new-answer-word'].value, 
+                            hint: e.target.elements['new-hint'].value, 
+                            category: e.target.elements['new-category'].value, 
+                            srs_level: 0, 
+                            next_review_date: Timestamp.now() 
+                        });
+                        this.showAlert('เพิ่มข้อมูลสำเร็จ!');
                         this.allUserQuestions = await FirebaseService.getQuestions(this.currentUser.uid);
                         this.renderManageList();
                         e.target.reset();
+                    });
+                    document.getElementById('reset-data-btn').addEventListener('click', async () => {
+                        if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลทั้งหมด? การกระทำนี้ไม่สามารถย้อนกลับได้')) {
+                            for (const q of this.allUserQuestions) {
+                                await FirebaseService.deleteQuestion(this.currentUser.uid, q.id);
+                            }
+                            this.showAlert('รีเซ็ตข้อมูลทั้งหมดแล้ว', 'success');
+                            this.allUserQuestions = [];
+                            this.renderManageList();
+                        }
                     });
                 } else if (page === 'dashboard') {
                     document.getElementById('back-to-menu-btn').addEventListener('click', () => this.render('main-menu'));
@@ -268,7 +288,6 @@
             async renderDashboard() {
                 document.getElementById('total-questions').textContent = this.allUserQuestions.length;
                 const now = new Date();
-                now.setHours(0, 0, 0, 0);
                 const dueCount = this.allUserQuestions.filter(q => q.next_review_date.toDate() <= now).length;
                 document.getElementById('due-for-review').textContent = dueCount;
                 const categoryCounts = this.allUserQuestions.reduce((acc, q) => {
@@ -289,21 +308,21 @@
                 const listContainer = document.getElementById('questions-list');
                 if (!listContainer) return;
                 listContainer.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
-                if (this.allUserQuestions.length === 0) { listContainer.innerHTML = '<p class="text-center text-muted">ยังไม่มีคำศัพท์</p>'; return; }
-                const now = new Date(); now.setHours(0,0,0,0);
-                let tableHTML = `<table class="table table-striped table-hover"><thead><tr><th>คำศัพท์ / หมวดหมู่</th><th>สถานะ</th><th class="text-end">จัดการ</th></tr></thead><tbody>`;
+                if (this.allUserQuestions.length === 0) { listContainer.innerHTML = '<p class="text-center text-muted">ยังไม่มีข้อมูล</p>'; return; }
+                const now = new Date();
+                let tableHTML = `<table class="table table-striped table-hover"><thead><tr><th>ประโยค / คำใบ้</th><th>สถานะ</th><th class="text-end">จัดการ</th></tr></thead><tbody>`;
                 this.allUserQuestions.sort((a,b)=>a.question.localeCompare(b.question)).forEach(q => {
                     const due = q.next_review_date.toDate() <= now;
-                    tableHTML += `<tr><td>${q.question}<br><small class="text-muted">${q.answer}</small><br><small class="text-info">${q.category}</small></td><td><span class="badge bg-info">Lv. ${q.srs_level}</span> ${due ? `<span class="badge bg-warning">ถึงรอบทวน</span>` : ''}</td><td class="text-end"><button class="btn btn-sm btn-info recording-history-btn" data-word-id="${q.id}" data-word-q="${q.question}"><i class="bi bi-clock-history"></i></button> <button class="btn btn-sm btn-danger delete-btn" data-id="${q.id}">ลบ</button></td></tr>`;
+                    tableHTML += `<tr><td>${q.question.replace('___', `<strong>${q.answer}</strong>`)}<br><small class="text-muted">${q.hint}</small><br><small class="text-info">${q.category}</small></td><td><span class="badge bg-info">Lv. ${q.srs_level}</span> ${due ? `<span class="badge bg-warning">ถึงรอบทวน</span>` : ''}</td><td class="text-end"><button class="btn btn-sm btn-info recording-history-btn" data-word-id="${q.id}" data-word-q="${q.answer}"><i class="bi bi-clock-history"></i></button> <button class="btn btn-sm btn-danger delete-btn" data-id="${q.id}">ลบ</button></td></tr>`;
                 });
                 listContainer.innerHTML = tableHTML + `</tbody></table>`;
-                listContainer.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', async (e) => { if (confirm('ยืนยันการลบ?')) { await FirebaseService.deleteQuestion(this.currentUser.uid, e.currentTarget.dataset.id); this.showAlert('ลบคำศัพท์แล้ว', 'warning'); this.allUserQuestions = await FirebaseService.getQuestions(this.currentUser.uid); this.renderManageList(); } }));
+                listContainer.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', async (e) => { if (confirm('ยืนยันการลบ?')) { await FirebaseService.deleteQuestion(this.currentUser.uid, e.currentTarget.dataset.id); this.showAlert('ลบข้อมูลแล้ว', 'warning'); this.allUserQuestions = await FirebaseService.getQuestions(this.currentUser.uid); this.renderManageList(); } }));
                 listContainer.querySelectorAll('.recording-history-btn').forEach(b => b.addEventListener('click', (e) => this.showRecordingHistory(e.currentTarget.dataset.wordId, e.currentTarget.dataset.wordQ)));
             },
             
             showStartSessionModal() {
                 const categorySelect = document.getElementById('category-select');
-                categorySelect.innerHTML = '<option value="all">ทบทวนทั้งหมด</option><option value="due">เฉพาะที่ถึงรอบทวน (วันนี้)</option>';
+                categorySelect.innerHTML = '<option value="all">ทบทวนทั้งหมด</option><option value="due">เฉพาะที่ถึงรอบทวน</option>';
                 const categories = [...new Set(this.allUserQuestions.map(q => q.category))];
                 categories.forEach(cat => categorySelect.add(new Option(`เฉพาะหมวดหมู่: ${cat}`, cat)));
                 const modal = new bootstrap.Modal(document.getElementById('startSessionModal'));
@@ -315,125 +334,106 @@
             },
 
             startSession(options) {
-                this.quizSession = { ...options, dueQuestions: [], lastRecordingBlob: null };
-                const now = new Date(); now.setHours(0, 0, 0, 0);
+                this.quizSession = { ...options, dueQuestions: [], lastRecordingBlob: null, currentState: null };
+                const now = new Date();
                 let filtered = options.category === 'all' ? this.allUserQuestions : options.category === 'due' ? this.allUserQuestions.filter(q => q.next_review_date.toDate() <= now) : this.allUserQuestions.filter(q => q.category === options.category);
                 this.quizSession.dueQuestions = filtered.sort(() => Math.random() - 0.5); 
-                if (this.quizSession.dueQuestions.length === 0) return this.showAlert('ไม่มีคำศัพท์ที่ตรงตามเงื่อนไขนี้', 'info'); 
+                if (this.quizSession.dueQuestions.length === 0) return this.showAlert('ไม่มีข้อมูลที่ตรงตามเงื่อนไขนี้', 'info'); 
                 this.render('test');
                 this.nextCard();
             },
 
             nextCard() {
-                SpeechService.stopListening(); 
-                this.quizSession.lastRecordingBlob = null;
+                SpeechService.cancelSpeech();
                 const badge = document.getElementById('due-count-badge');
                 if (badge) badge.textContent = `เหลือ: ${this.quizSession.dueQuestions.length}`;
                 
                 const nextQ = this.quizSession.dueQuestions.pop();
                 if (nextQ) {
                     this.quizSession.currentQuestion = nextQ;
-                    this.displayPracticeCard(nextQ);
+                    this.quizSession.lastRecordingBlob = null;
+                    this.runCardSequence(nextQ, 'ask');
                 } else {
                     this.showAlert('รอบนี้เสร็จแล้ว!', 'success');
                     this.render('main-menu');
                 }
             },
 
-            displayPracticeCard(q) {
-                let cardHTML = `<div class="d-flex justify-content-between mb-2">
-                                    <button id="back-btn" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> กลับ</button>
-                                </div>
-                                <div class="my-4 p-3 border rounded bg-light">
-                                    <p class="fs-4"><strong>${q.question}</strong></p>
-                                    <p class="fs-5 text-muted">${q.answer}</p>
-                                </div>
-                                <hr>
-                                <p class="fs-5 mt-4">ฝึกออกเสียงและประเมินตัวเอง</p>
-                                <div class="d-flex justify-content-center align-items-center gap-3">
-                                    <div>
-                                        <button id="record-btn" class="btn btn-lg btn-danger rounded-circle" style="width: 80px; height: 80px;"><i class="bi bi-mic-fill fs-2"></i></button>
-                                        <p class="mt-2 small text-muted">กดเพื่ออัดเสียง</p>
-                                    </div>
-                                    <div>
-                                        <button id="command-btn" class="btn btn-lg btn-secondary rounded-circle" style="width: 80px; height: 80px;"><i class="bi bi-chat-dots-fill fs-2"></i></button>
-                                        <p class="mt-2 small text-muted">พูดคำสั่ง</p>
-                                    </div>
-                                </div>
-                                <div class="btn-group mt-4" role="group">
-                                    ${Object.keys(this.LEVEL_TO_DAYS_MAP).map(l => `<button type="button" class="btn btn-outline-secondary level-btn" data-level="${l}">${l}</button>`).join('')}
-                                </div>`;
-                document.getElementById('quiz-area').innerHTML = cardHTML;
-                document.getElementById('back-btn').addEventListener('click', () => this.render('main-menu'));
-                document.querySelectorAll('.level-btn').forEach(btn => btn.addEventListener('click', (e) => this.setReviewByLevel(parseInt(e.currentTarget.dataset.level))));
-                
-                const commandBtn = document.getElementById('command-btn');
-                commandBtn.addEventListener('click', () => SpeechService.toggleListen(commandBtn, 'th-TH'));
+            runCardSequence(q, step, data = {}) {
+                const quizArea = document.getElementById('quiz-area');
+                if (!quizArea) return;
 
-                const recordBtn = document.getElementById('record-btn');
-                recordBtn.addEventListener('click', async () => {
-                    if (RecordingService.isRecording) {
-                        this.quizSession.lastRecordingBlob = await RecordingService.stopRecording(recordBtn);
-                        this.showAlert('หยุดอัดเสียงแล้ว', 'info');
-                    } else {
-                        RecordingService.startRecording(recordBtn);
-                        this.showAlert('กำลังอัดเสียง...', 'info');
-                    }
-                });
-
-                SpeechService.speakPair(q.question, 'en-US', q.answer, 'th-TH');
-            },
-
-            handleSpeechInput(transcript) {
-                this.showAlert(`คุณพูดว่า: "${transcript}"`, 'info');
-
-                if (transcript.includes("อีกรอบ")) {
-                    const q = this.quizSession.currentQuestion;
-                    if (q) SpeechService.speakPair(q.question, 'en-US', q.answer, 'th-TH');
-                    return;
-                }
-
-                const thaiNumMap = { 'หนึ่ง': 1, 'สอง': 2, 'สาม': 3, 'สี่': 4, 'ห้า': 5 };
-                let level = null;
-                const match = transcript.match(/(?:level|เลเวล|เลเวว)?\s*([1-5])/i);
-                if (match?.[1]) { level = parseInt(match[1], 10); }
-                else { for (const word in thaiNumMap) if (transcript.includes(word)) { level = thaiNumMap[word]; break; } }
-                
-                if (level) {
-                    this.setReviewByLevel(level);
-                } else {
-                    this.showAlert('ไม่เข้าใจคำสั่ง', 'warning');
+                if (step === 'ask') {
+                    quizArea.innerHTML = `<div class="my-4 p-3">
+                        <p class="fs-5 text-muted">เติมคำในช่องว่าง:</p>
+                        <h2 class="display-6 my-3">${q.question}</h2>
+                        <i class="bi bi-mic-fill fs-1"></i>
+                        <p id="status-text" class="text-muted mt-2">กำลังพูดคำใบ้...</p>
+                    </div>`;
+                    SpeechService.speak(q.hint, 'th-TH', () => {
+                        SpeechService.speak('กรุณาพูดคำตอบครับ', 'th-TH', () => {
+                            document.getElementById('status-text').textContent = 'กำลังฟังคำตอบ...';
+                            document.querySelector('#quiz-area .bi-mic-fill').classList.add('mic-listening');
+                            this.quizSession.currentState = 'AWAITING_ANSWER';
+                            RecordingService.startRecording();
+                            SpeechService.listen('en-US');
+                        });
+                    });
+                } else if (step === 'feedback') {
+                    const fullSentence = q.question.replace('___', `<strong>${q.answer}</strong>`);
+                    quizArea.innerHTML = `<div class="my-4 p-3">
+                        <h2 class="${data.isCorrect ? "text-success" : "text-danger"}">${data.isCorrect ? "ถูกต้อง!" : "ยังไม่ถูกต้อง"}</h2>
+                        <p class="text-muted">คุณตอบว่า: <strong class="text-dark">"${data.transcript || '...'}"</strong></p><hr>
+                        <p class="mt-3">ประโยคที่สมบูรณ์คือ:</p><h4 class="mt-3">${fullSentence}</h4>
+                        <i class="bi bi-mic-fill fs-1 mt-4"></i>
+                        <p id="status-text" class="text-muted mt-2">กำลังพูดเฉลย...</p>
+                    </div>`;
+                    SpeechService.speak(q.question.replace('___', q.answer), 'en-US', () => {
+                        SpeechService.speak('คุณจำได้ดีแค่ไหน? กรุณาบอกเลเวล 1 ถึง 5', 'th-TH', () => {
+                            document.getElementById('status-text').textContent = 'กรุณาบอกเลเวล 1 ถึง 5...';
+                            document.querySelector('#quiz-area .bi-mic-fill').classList.add('mic-listening');
+                            this.quizSession.currentState = 'AWAITING_LEVEL';
+                            SpeechService.listen('th-TH');
+                        });
+                    });
                 }
             },
-            
-            async setReviewByLevel(level) {
-                SpeechService.stopListening();
-                if (RecordingService.isRecording) {
-                    this.quizSession.lastRecordingBlob = await RecordingService.stopRecording(document.getElementById('record-btn'));
-                }
+
+            async handleSpeechInput(transcript) {
                 const q = this.quizSession.currentQuestion;
                 if (!q) return;
-                document.querySelectorAll('#quiz-area button').forEach(b => b.disabled = true);
-                
-                if (this.quizSession.lastRecordingBlob) {
-                    try {
-                        await IndexedDBService.addRecording(q.id, this.quizSession.lastRecordingBlob);
-                        this.showAlert('บันทึกเสียงแล้ว', 'success');
-                    } catch (err) { this.showAlert('ไม่สามารถบันทึกเสียงได้', 'danger'); }
-                }
 
-                const nextReviewDate = new Date();
-                nextReviewDate.setHours(0, 0, 0, 0);
-                nextReviewDate.setDate(nextReviewDate.getDate() + this.LEVEL_TO_DAYS_MAP[level]);
-                
-                await FirebaseService.updateQuestion(this.currentUser.uid, q.id, { srs_level: level, next_review_date: Timestamp.fromDate(nextReviewDate) });
-                
-                const qIndex = this.allUserQuestions.findIndex(item => item.id === q.id);
-                if (qIndex > -1) this.allUserQuestions[qIndex] = {...this.allUserQuestions[qIndex], srs_level: level, next_review_date: Timestamp.fromDate(nextReviewDate)};
-                
-                setTimeout(() => this.nextCard(), 500);
+                if (this.quizSession.currentState === 'AWAITING_ANSWER') {
+                    this.quizSession.lastRecordingBlob = await RecordingService.stopRecording();
+                    const cleanString = (str) => str ? str.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"").trim() : "";
+                    const isCorrect = cleanString(transcript) === cleanString(q.answer);
+                    if (!isCorrect) this.quizSession.lastRecordingBlob = null;
+                    this.runCardSequence(q, 'feedback', { isCorrect, transcript });
+
+                } else if (this.quizSession.currentState === 'AWAITING_LEVEL') {
+                    const thaiNumMap = { 'หนึ่ง': 1, 'สอง': 2, 'สาม': 3, 'สี่': 4, 'ห้า': 5 };
+                    let level = null;
+                    const match = transcript.match(/(?:level|เลเวล|เลเวว)?\s*([1-5])/i);
+                    if (match?.[1]) { level = parseInt(match[1], 10); }
+                    else { for (const word in thaiNumMap) if (transcript.includes(word)) { level = thaiNumMap[word]; break; } }
+                    
+                    if (level) {
+                        this.setReviewByLevel(level);
+                    } else {
+                        SpeechService.speak('ไม่เข้าใจระดับที่เลือก กรุณาบอกเลเวล 1 ถึง 5 อีกครั้งครับ', 'th-TH', () => {
+                            this.quizSession.currentState = 'AWAITING_LEVEL';
+                            SpeechService.listen('th-TH');
+                        });
+                    }
+                }
             },
 
+            handleSpeechEnd() {
+                SpeechService.isListening = false;
+                const micIcon = document.querySelector('#quiz-area .bi-mic-fill');
+                if (micIcon) micIcon.classList.remove('mic-listening');
+            },
+            
             async showRecordingHistory(wordId, wordQ) {
                 const body = document.getElementById('history-modal-body');
                 document.getElementById('history-modal-title').textContent = `เปรียบเทียบเสียง: ${wordQ}`;
@@ -448,6 +448,31 @@
                     const firstUrl = URL.createObjectURL(first.audioBlob), lastUrl = URL.createObjectURL(last.audioBlob);
                     body.innerHTML = `<div class="row"><div class="col-md-6 mb-3 mb-md-0"><div class="card h-100"><div class="card-header"><h5><i class="bi bi-skip-start-circle"></i> การอัดครั้งแรก</h5></div><div class="card-body"><p><small>อัดเมื่อ: ${first.timestamp.toLocaleString('th-TH')}</small></p><audio controls class="w-100" src="${firstUrl}"></audio></div></div></div><div class="col-md-6"><div class="card h-100"><div class="card-header"><h5><i class="bi bi-check-circle"></i> การอัดล่าสุด</h5></div><div class="card-body"><p><small>อัดเมื่อ: ${last.timestamp.toLocaleString('th-TH')}</small></p><audio controls class="w-100" src="${lastUrl}"></audio></div></div></div></div>`;
                 }
+            },
+            
+            async setReviewByLevel(level) {
+                this.quizSession.currentState = null;
+                const q = this.quizSession.currentQuestion;
+                if (!q) return;
+
+                const quizArea = document.getElementById('quiz-area');
+                quizArea.innerHTML = `<div class="my-4 p-3"><p class="fs-5 text-muted">บันทึก Level ${level} แล้ว...</p><div class="spinner-border my-3" role="status"></div></div>`;
+
+                if (this.quizSession.lastRecordingBlob) {
+                    try {
+                        await IndexedDBService.addRecording(q.id, this.quizSession.lastRecordingBlob);
+                    } catch (err) { this.showAlert('ไม่สามารถบันทึกเสียงได้', 'danger'); }
+                }
+
+                const nextReviewDate = new Date();
+                const minutesToAdd = this.LEVEL_TO_MINUTES_MAP[level] || 1;
+                nextReviewDate.setMinutes(nextReviewDate.getMinutes() + minutesToAdd);
+                
+                await FirebaseService.updateQuestion(this.currentUser.uid, q.id, { srs_level: level, next_review_date: Timestamp.fromDate(nextReviewDate) });
+                const qIndex = this.allUserQuestions.findIndex(item => item.id === q.id);
+                if (qIndex > -1) this.allUserQuestions[qIndex] = {...this.allUserQuestions[qIndex], srs_level: level, next_review_date: Timestamp.fromDate(nextReviewDate)};
+                
+                setTimeout(() => this.nextCard(), 1000);
             },
             
             showAlert(msg, type = 'success') {
