@@ -102,11 +102,11 @@
         const db = getFirestore(app);
 
         const INITIAL_QUESTIONS = [
-            { question: "A ___ is a device used to store electrical charge in a circuit.", answer: "capacitor", hint: "อุปกรณ์ที่ใช้เก็บประจุไฟฟ้าในวงจรอิเล็กทรอนิกส์", category: "วิศวกรรม" },
-            { question: "A ___ is an electronic component with two terminals that conducts current primarily in one direction.", answer: "diode", hint: "อุปกรณ์อิเล็กทรอนิกส์ที่ควบคุมกระแสไฟฟ้าให้ไหลในทิศทางเดียว", category: "วิศวกรรม" },
-            { question: "___ describes the relationship between voltage, current, and resistance.", answer: "Ohm's law", hint: "กฎของโอห์มคือความสัมพันธ์ระหว่างแรงดันไฟฟ้า กระแส และความต้านทาน", category: "วิศวกรรม" },
-            { question: "The engineer used an ___ to measure the voltage across the component.", answer: "oscilloscope", hint: "วิศวกรใช้เครื่องออสซิลโลสโคปเพื่อวัดแรงดันไฟฟ้าคร่อมอุปกรณ์", category: "วิศวกรรม" },
-            { question: "We use a ___ to limit the flow of current in a circuit.", answer: "resistor", hint: "เราใช้อุปกรณ์อะไรเพื่อจำกัดการไหลของกระแสในวงจรไฟฟ้า", category: "วิศวกรรม" }
+            { question: "This app uses ___ to store data online.", answer: "Firebase", hint: "แอปนี้ใช้ Firebase เพื่อเก็บข้อมูลออนไลน์", category: "เทคโนโลยี" },
+            { question: "Spaced repetition is a good ___ method.", answer: "learning", hint: "การทบทวนแบบเว้นระยะเป็นวิธีการเรียนรู้ที่ดี", category: "การเรียนรู้" },
+            { question: "Please ___ your answer clearly.", answer: "speak", hint: "กรุณาพูดคำตอบของคุณให้ชัดเจน", category: "การใช้งาน" },
+            { question: "I need to ___ this word again.", answer: "review", hint: "ฉันต้องทบทวนคำศัพท์นี้อีกครั้ง", category: "การเรียนรู้" },
+            { question: "The user ___ is very simple.", answer: "interface", hint: "ส่วนต่อประสานกับผู้ใช้นั้นเรียบง่ายมาก", category: "เทคโนโลยี" }
         ];
 
         const FirebaseService = {
@@ -248,8 +248,6 @@
 
         const App = {
             currentUser: null, allUserQuestions: [], quizSession: {}, dueCheckInterval: null,
-            
-            // --- จุดที่แก้ไข: ปรับเวลาทบทวนใหม่ ---
             LEVEL_TO_MINUTES_MAP: { 1: 0.5, 2: 2, 3: 5, 4: 15, 5: 30 },
             
             init() {
@@ -399,7 +397,10 @@
                 SpeechService.cancelSpeech();
                 const badge = document.getElementById('due-count-badge');
                 if (badge) badge.textContent = `เหลือ: ${this.quizSession.dueQuestions.length}`;
-                const nextQ = this.quizSession.dueQuestions.pop();
+                
+                // --- จุดที่แก้ไข: เปลี่ยนจาก pop() เป็น shift() เพื่อแก้ปัญหาการวนซ้ำ ---
+                const nextQ = this.quizSession.dueQuestions.shift();
+                
                 if (nextQ) {
                     this.quizSession.currentQuestion = nextQ;
                     this.quizSession.lastRecordingBlob = null;
@@ -409,10 +410,11 @@
                     this.render('main-menu');
                 }
             },
-
+            
             runCardSequence(q, step, data = {}) {
                 const quizArea = document.getElementById('quiz-area');
                 if (!quizArea) return;
+
                 if (step === 'ask') {
                     quizArea.innerHTML = `<div class="my-4 p-3"><p class="fs-5 text-muted">เติมคำในช่องว่าง:</p><h2 class="display-6 my-3">${q.question}</h2><i class="bi bi-mic-fill fs-1"></i><p id="status-text" class="text-muted mt-2">กำลังพูดคำใบ้...</p></div>`;
                     SpeechService.speak(q.hint, 'th-TH', () => {
@@ -425,32 +427,43 @@
                         });
                     });
                 } else if (step === 'feedback') {
-                    if (!data.isCorrect) {
-                        const reinsertIndex = Math.min(this.quizSession.dueQuestions.length, 2);
-                        this.quizSession.dueQuestions.splice(reinsertIndex, 0, q);
+                    const fullSentence = q.question.replace('___', `<strong>${q.answer}</strong>`);
+                    quizArea.innerHTML = `<div class="my-4 p-3"><h2 class="${data.isCorrect ? "text-success" : "text-danger"}">${data.isCorrect ? "ถูกต้อง!" : "ยังไม่ถูกต้อง"}</h2><p class="text-muted">คุณตอบว่า: <strong class="text-dark">"${data.transcript || '...'}"</strong></p><hr><p class="mt-3">ประโยคที่สมบูรณ์คือ:</p><h4 class="mt-3">${fullSentence}</h4></div>`;
+
+                    if (data.isCorrect) {
+                        quizArea.innerHTML += `<i class="bi bi-mic-fill fs-1 mt-4"></i><p id="status-text" class="text-muted mt-2">กำลังพูดเฉลย...</p>`;
+                        SpeechService.speak(q.question.replace('___', q.answer), 'en-US', () => {
+                            SpeechService.speak('คุณจำได้ดีแค่ไหน? กรุณาบอกเลเวล 1 ถึง 5', 'th-TH', () => {
+                                document.getElementById('status-text').textContent = 'กรุณาบอกเลเวล 1 ถึง 5...';
+                                document.querySelector('#quiz-area .bi-mic-fill').classList.add('mic-listening');
+                                this.quizSession.currentState = 'AWAITING_LEVEL';
+                                SpeechService.listen('th-TH');
+                            });
+                        });
+                    } else {
+                        quizArea.innerHTML += `<p class="fs-5 text-muted mt-4">จะกลับมาทวนคำถามนี้อีกครั้ง...</p><div class="spinner-border my-3" role="status"></div>`;
+                        // --- จุดที่แก้ไข: ใส่คำถามกลับไปท้ายคิว ไม่ใช่ข้างหน้า ---
+                        this.quizSession.dueQuestions.push(q);
                         const badge = document.getElementById('due-count-badge');
                         if (badge) badge.textContent = `เหลือ: ${this.quizSession.dueQuestions.length}`;
-                    }
-                    const fullSentence = q.question.replace('___', `<strong>${q.answer}</strong>`);
-                    quizArea.innerHTML = `<div class="my-4 p-3"><h2 class="${data.isCorrect ? "text-success" : "text-danger"}">${data.isCorrect ? "ถูกต้อง!" : "ยังไม่ถูกต้อง"}</h2><p class="text-muted">คุณตอบว่า: <strong class="text-dark">"${data.transcript || '...'}"</strong></p><hr><p class="mt-3">ประโยคที่สมบูรณ์คือ:</p><h4 class="mt-3">${fullSentence}</h4><i class="bi bi-mic-fill fs-1 mt-4"></i><p id="status-text" class="text-muted mt-2">กำลังพูดเฉลย...</p></div>`;
-                    SpeechService.speak(q.question.replace('___', q.answer), 'en-US', () => {
-                        SpeechService.speak('คุณจำได้ดีแค่ไหน? กรุณาบอกเลเวล 1 ถึง 5', 'th-TH', () => {
-                            document.getElementById('status-text').textContent = 'กรุณาบอกเลเวล 1 ถึง 5...';
-                            document.querySelector('#quiz-area .bi-mic-fill').classList.add('mic-listening');
-                            this.quizSession.currentState = 'AWAITING_LEVEL';
-                            SpeechService.listen('th-TH');
+                        SpeechService.speak(q.question.replace('___', q.answer), 'en-US', () => {
+                            setTimeout(() => this.nextCard(), 2000);
                         });
-                    });
+                    }
                 }
             },
 
             async handleSpeechInput(transcript) {
                 const q = this.quizSession.currentQuestion;
                 if (!q) return;
+
                 if (this.quizSession.currentState === 'AWAITING_ANSWER') {
-                    this.quizSession.lastRecordingBlob = await RecordingService.stopRecording();
+                    const blob = await RecordingService.stopRecording();
                     const cleanString = (str) => str ? str.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"").trim() : "";
                     const isCorrect = cleanString(transcript) === cleanString(q.answer);
+                    if(isCorrect) {
+                        this.quizSession.lastRecordingBlob = blob;
+                    }
                     this.runCardSequence(q, 'feedback', { isCorrect, transcript });
                 } 
                 else if (this.quizSession.currentState === 'AWAITING_LEVEL') {
@@ -470,6 +483,7 @@
                             }
                         }
                     }
+
                     if (foundLevel) {
                         this.setReviewByLevel(foundLevel);
                     } else {
@@ -519,7 +533,11 @@
                 }
                 const nextReviewDate = new Date();
                 const minutesToAdd = this.LEVEL_TO_MINUTES_MAP[level] || 1;
-                nextReviewDate.setMinutes(nextReviewDate.getMinutes() + minutesToAdd);
+                if (minutesToAdd < 1) {
+                    nextReviewDate.setSeconds(nextReviewDate.getSeconds() + minutesToAdd * 60);
+                } else {
+                    nextReviewDate.setMinutes(nextReviewDate.getMinutes() + minutesToAdd);
+                }
                 await FirebaseService.updateQuestion(this.currentUser.uid, q.id, { srs_level: level, next_review_date: Timestamp.fromDate(nextReviewDate) });
                 const qIndex = this.allUserQuestions.findIndex(item => item.id === q.id);
                 if (qIndex > -1) this.allUserQuestions[qIndex] = {...this.allUserQuestions[qIndex], srs_level: level, next_review_date: Timestamp.fromDate(nextReviewDate)};
