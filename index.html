@@ -323,7 +323,7 @@
                 const dueCount = this.allUserQuestions.filter(q => q.next_review_date <= now).length;
                 document.getElementById('due-for-review').textContent = dueCount;
                 const categoryCounts = this.allUserQuestions.reduce((acc, q) => { acc[q.category] = (acc[q.category] || 0) + 1; return acc; }, {});
-                new Chart(document.getElementById('categoryChart').getContext('2d'), { type: 'pie', data: { labels: Object.keys(categoryCounts), datasets: [{ data: Object.values(categoryCounts), backgroundColor: Object.keys(categoryCounts).map((_, i) => `hsl(${i * 60}, 70%, 70%)`), hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } } });
+                new Chart(document.getElementById('categoryChart').getContext('d'), { type: 'pie', data: { labels: Object.keys(categoryCounts), datasets: [{ data: Object.values(categoryCounts), backgroundColor: Object.keys(categoryCounts).map((_, i) => `hsl(${i * 60}, 70%, 70%)`), hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } } });
             },
             
             formatTimeUntilNextReview(reviewDate) {
@@ -341,20 +341,34 @@
                 return `<span class="badge bg-secondary">${diffDays} วัน</span>`;
             },
 
+            // --- START CHANGE 1: renderManageList (เพิ่มคอลัมน์ ID) ---
             async renderManageList() {
                 const listContainer = document.getElementById('questions-list');
                 if (!listContainer) return;
                 listContainer.innerHTML = '<div class="text-center"><div class="spinner-border" role="status"></div></div>';
                 if (this.allUserQuestions.length === 0) { listContainer.innerHTML = '<p class="text-center text-muted">ยังไม่มีข้อมูล</p>'; return; }
-                let tableHTML = `<table class="table table-striped table-hover"><thead><tr><th>ประโยค / คำใบ้</th><th>สถานะ</th><th class="text-end">จัดการ</th></tr></thead><tbody>`;
+                
+                let tableHTML = `<table class="table table-striped table-hover"><thead><tr><th>ID</th><th>ประโยค / คำใบ้</th><th>สถานะ</th><th class="text-end">จัดการ</th></tr></thead><tbody>`;
+                
                 this.allUserQuestions.sort((a,b)=>a.question.localeCompare(b.question)).forEach(q => {
                     const timeStatusBadge = this.formatTimeUntilNextReview(q.next_review_date);
-                    tableHTML += `<tr><td>${q.question.replace('___', `<strong>${q.answer}</strong>`)}<br><small class="text-muted">${q.hint}</small><br><small class="text-info">${q.category}</small></td><td><span class="badge bg-info">Lv. ${q.srs_level}</span> ${timeStatusBadge}</td><td class="text-end"><button class="btn btn-sm btn-info recording-history-btn" data-word-id="${q.id}" data-word-q="${q.answer}"><i class="bi bi-clock-history"></i></button> <button class="btn btn-sm btn-danger delete-btn" data-id="${q.id}">ลบ</button></td></tr>`;
+                    
+                    tableHTML += `<tr>
+                        <td><small class="text-muted" style="word-break: break-all;">${q.id}</small></td>
+                        <td>${q.question.replace('___', `<strong>${q.answer}</strong>`)}<br><small class="text-muted">${q.hint}</small><br><small class="text-info">${q.category}</small></td>
+                        <td><span class="badge bg-info">Lv. ${q.srs_level}</span> ${timeStatusBadge}</td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-info recording-history-btn" data-word-id="${q.id}" data-word-q="${q.answer}"><i class="bi bi-clock-history"></i></button> 
+                            <button class="btn btn-sm btn-danger delete-btn" data-id="${q.id}">ลบ</button>
+                        </td>
+                    </tr>`;
                 });
+
                 listContainer.innerHTML = tableHTML + `</tbody></table>`;
                 listContainer.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', async (e) => { if (confirm('ยืนยันการลบ?')) { await LocalStorageService.deleteQuestion(e.currentTarget.dataset.id); this.showAlert('ลบข้อมูลแล้ว', 'warning'); this.allUserQuestions = await LocalStorageService.getQuestions(); this.renderManageList(); } }));
                 listContainer.querySelectorAll('.recording-history-btn').forEach(b => b.addEventListener('click', (e) => this.showRecordingHistory(e.currentTarget.dataset.wordId, e.currentTarget.dataset.wordQ)));
             },
+            // --- END CHANGE 1 ---
             
             showStartSessionModal() {
                 const categorySelect = document.getElementById('category-select');
@@ -383,24 +397,26 @@
                     return;
                 }
                 this.render('test');
-                this.startActiveQuizDueCheck(); // --- จุดที่แก้ไข ---
+                this.startActiveQuizDueCheck(); 
                 this.nextCard();
             },
 
             nextCard() {
                 SpeechService.cancelSpeech();
-                this.updateDebugInfo();
+                this.updateDebugInfo(); // อัปเดตก่อน shift() เพื่อแสดงผลตัวถัดไป
                 const badge = document.getElementById('due-count-badge');
                 if (badge) badge.textContent = `เหลือ: ${this.quizSession.dueQuestions.length}`;
                 const nextQ = this.quizSession.dueQuestions.shift();
                 if (nextQ) {
                     this.quizSession.currentQuestion = nextQ;
                     this.quizSession.lastRecordingBlob = null;
-                    this.updateDebugInfo();
+                    this.updateDebugInfo(); // อัปเดตอีกครั้งหลัง shift() เพื่อแสดงผลปัจจุบัน
                     this.runCardSequence(nextQ, 'ask');
                 } else {
+                    this.quizSession.currentQuestion = null; // เคลียร์คำถามปัจจุบันเมื่อจบรอบ
+                    this.updateDebugInfo(); // อัปเดตครั้งสุดท้ายเพื่อแสดง "Session End"
                     this.showAlert('รอบนี้เสร็จแล้ว!', 'success');
-                    this.stopActiveQuizDueCheck(); // --- จุดที่แก้ไข ---
+                    this.stopActiveQuizDueCheck(); 
                     this.render('main-menu');
                 }
             },
@@ -582,18 +598,16 @@
                         this.showAlert(`${newlyDueItems.length} คำถามถึงรอบทวนแล้ว! กำลังแทรกเข้าในคิว...`, 'info');
                         this.quizSession.dueQuestions.unshift(...newlyDueItems);
                         
-                        // Update the main data source to prevent re-adding
                         for(const item of newlyDueItems) {
                             const qIndex = this.allUserQuestions.findIndex(q => q.id === item.id);
                             if (qIndex > -1) {
-                                // Set a far future date temporarily until it's answered again
                                 this.allUserQuestions[qIndex].next_review_date = new Date('2099-01-01');
                             }
                         }
                         await LocalStorageService.saveQuestions(this.allUserQuestions);
                         this.updateDebugInfo();
                     }
-                }, 5000); // Check every 5 seconds
+                }, 5000); 
             },
 
             stopActiveQuizDueCheck() {
@@ -603,6 +617,7 @@
                 }
             },
 
+            // --- START CHANGE 2: updateDebugInfo (แสดง Next ID) ---
             updateDebugInfo() {
                 const debugContainer = document.getElementById('debug-info');
                 if (!debugContainer) return;
@@ -610,19 +625,41 @@
                 const currentQ = this.quizSession.currentQuestion;
                 const queue = this.quizSession.dueQuestions;
 
+                // (Handle session end)
                 if (!currentQ && (!queue || queue.length === 0)) {
-                    debugContainer.innerHTML = 'Session End';
-                    return;
+                    // ถ้า currentQ เป็น null (หลังจบรอบ) แต่คิวยังไม่ว่าง (กำลังจะ nextCard)
+                    // ให้แสดงว่ากำลังจะจบรอบ
+                    if (currentQ === null && queue && queue.length > 0) {
+                         // ไม่ต้องทำอะไร รอ nextCard() เรียก updateDebugInfo() อีกที
+                    } else {
+                        debugContainer.innerHTML = 'Session End';
+                        return;
+                    }
                 }
-                
-                const currentIdShort = currentQ ? currentQ.id.slice(-4) : 'N/A'; 
-                const nextIds = queue.slice(0, 10).map(q => q.id.slice(-4)).join(', ');
 
+                const currentIdShort = currentQ ? currentQ.id.slice(-4) : 'N/A';
+                
+                let nextIdShort = 'N/A';
+                let remainingQueueStr = '[]';
+
+                if (queue && queue.length > 0) {
+                    // คำถามถัดไปคือตัวแรกในคิว
+                    nextIdShort = queue[0].id.slice(-4); 
+                    
+                    // แสดงคิวที่เหลือ (ถ้ามี)
+                    if (queue.length > 1) {
+                        remainingQueueStr = `[${queue.slice(1, 10).map(q => q.id.slice(-4)).join(', ')}]`;
+                    }
+                }
+
+                // อัปเดต HTML
                 debugContainer.innerHTML = `
-                    <p class="mb-1"><strong>Question ID:</strong> ${currentIdShort}</p>
-                    <p class="mb-0"><strong>Queue:</strong> [${nextIds}]</p>
+                    <p class="mb-1"><strong>Current ID:</strong> ${currentIdShort}</p>
+                    <p class="mb-1"><strong>Next ID:</strong> ${nextIdShort}</p>
+                    <p class="mb-0"><strong>Queue:</strong> ${remainingQueueStr}</p>
                 `;
             },
+            // --- END CHANGE 2 ---
 
             showAlert(msg, type = 'success') {
                 const c = document.getElementById('alert-container');
