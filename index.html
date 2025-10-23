@@ -72,12 +72,32 @@
     </template>
 
     <template id="template-manage"><button id="back-to-menu-btn" class="btn btn-secondary mb-3 w-100"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button><div class="card mb-4"><div class="card-header bg-info text-white"><h5><i class="bi bi-plus-circle-fill"></i> เพิ่มข้อมูลใหม่ (คำศัพท์หรือประโยค)</h5></div><div class="card-body"><form id="add-form"><div class="mb-3"><label for="new-question" class="form-label">ประโยค (อังกฤษ, เว้นด้วย ___)</label><input type="text" id="new-question" class="form-control" placeholder="เช่น The ___ stores electrical energy." required></div><div class="mb-3"><label for="new-answer-word" class="form-label">คำตอบ (ที่เติมในช่องว่าง)</label><input type="text" id="new-answer-word" class="form-control" placeholder="เช่น capacitor" required></div><div class="mb-3"><label for="new-hint" class="form-label">ประโยคคำใบ้ (ไทย)</label><input type="text" id="new-hint" class="form-control" placeholder="เช่น ตัวเก็บประจุใช้เก็บพลังงานไฟฟ้า" required></div><div class="mb-3"><label for="new-category" class="form-label">หมวดหมู่</label><input type="text" id="new-category" class="form-control" required></div><button type="submit" class="btn btn-success w-100">เพิ่มข้อมูล</button></form></div></div><div class="card"><div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center"><h5><i class="bi bi-card-list"></i> คลังข้อมูลทั้งหมด</h5><button id="reset-data-btn" class="btn btn-danger btn-sm"><i class="bi bi-trash3-fill"></i> รีเซ็ตข้อมูลทั้งหมด</button></div><div class="card-body"><div id="questions-list" class="table-responsive"></div></div></div></template>
-    <template id="template-dashboard"><button id="back-to-menu-btn" class="btn btn-secondary mb-3 w-100"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button><div class="card mb-4"><div class="card-header bg-primary text-white"><h5><i class="bi bi-speedometer2"></i> แดชบอร์ดสรุปผล</h5></div><div class="card-body"><div class="row text-center mb-4"><div class="col"><h4 class="mb-0 text-primary" id="total-questions">0</h4><small class="text-muted">ข้อมูลทั้งหมด</small></div><div class="col"><h4 class="mb-0 text-warning" id="due-for-review">0</h4><small class="text-muted">ถึงรอบทวน</small></div></div><hr><h6 class="mb-3">สัดส่วนข้อมูลตามหมวดหมู่</h6><div style="position: relative; height:300px; width:100%"><canvas id="categoryChart"></canvas></div></div></div></template>
+    
+    <template id="template-dashboard">
+        <button id="back-to-menu-btn" class="btn btn-secondary mb-3 w-100"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button>
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white"><h5><i class="bi bi-speedometer2"></i> แดชบอร์ดสรุปผล</h5></div>
+            <div class="card-body">
+                <div class="row text-center mb-4">
+                    <div class="col"><h4 class="mb-0 text-primary" id="total-questions">0</h4><small class="text-muted">ข้อมูลทั้งหมด</small></div>
+                    <div class="col"><h4 class="mb-0 text-warning" id="due-for-review">0</h4><small class="text-muted">ถึงรอบทวน</small></div>
+                </div>
+                <hr>
+                <h6 class="mb-3">การกระจายตัวของ Level (ความเชี่ยวชาญ)</h6>
+                <div style="position: relative; height:300px; width:100%" class="mb-4">
+                    <canvas id="levelChart"></canvas>
+                </div>
+                <hr>
+                <h6 class="mb-3">สัดส่วนข้อมูลตามหมวดหมู่</h6>
+                <div style="position: relative; height:300px; width:100%">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </template>
 
     <script type="module">
         
-        // --- START CHANGE 2: Pimsleur-style content ---
-        // เปลี่ยนข้อมูลเริ่มต้นให้เป็น "ประโยค" มากขึ้น
         const INITIAL_QUESTIONS = [
             { question: "___ do you want?", answer: "What", hint: "คุณต้องการอะไร", category: "Lesson 1" },
             { question: "I ___ water.", answer: "want", hint: "ฉันต้องการน้ำ", category: "Lesson 1" },
@@ -85,7 +105,6 @@
             { question: "I want ___ water.", answer: "cold", hint: "ฉันต้องการน้ำเย็น", category: "Lesson 1" },
             { question: "I want cold ___.", answer: "water", hint: "ฉันต้องการน้ำเย็น", category: "Lesson 1" }
         ];
-        // --- END CHANGE 2 ---
 
         const LocalStorageService = {
             getQuestions: async () => {
@@ -266,9 +285,6 @@
         const App = {
             allUserQuestions: [], quizSession: {}, dueCheckInterval: null, activeQuizInterval: null,
             
-            // --- START CHANGE 1: Long-term SRS intervals ---
-            // เปลี่ยนจากหลัก "นาที" (ระยะสั้น) เป็น "ชั่วโมง" และ "วัน" (ระยะยาว)
-            // Original: { 1: 0.5, 2: 2, 3: 5, 4: 15, 5: 30 }
             LEVEL_TO_MINUTES_MAP: { 
                 1: 10,    // 10 นาที (ทวนทันที)
                 2: 480,   // 8 ชั่วโมง
@@ -276,7 +292,6 @@
                 4: 7200,  // 5 วัน
                 5: 21600  // 15 วัน
             },
-            // --- END CHANGE 1 ---
             
             async init() {
                 await IndexedDBService.init();
@@ -332,14 +347,87 @@
                 }
             },
             
+            // --- START FIX: แก้ไขฟังก์ชัน renderDashboard ---
             async renderDashboard() {
+                // ตรวจสอบว่ามี element canvas อยู่จริงหรือไม่ ก่อนวาด
+                const levelChartCtx = document.getElementById('levelChart')?.getContext('2d');
+                const categoryChartCtx = document.getElementById('categoryChart')?.getContext('2d');
+
+                if (!levelChartCtx || !categoryChartCtx) {
+                    console.error('ไม่พบ Canvas elements สำหรับวาดกราฟ');
+                    return; 
+                }
+
                 document.getElementById('total-questions').textContent = this.allUserQuestions.length;
                 const now = new Date();
                 const dueCount = this.allUserQuestions.filter(q => q.next_review_date <= now).length;
                 document.getElementById('due-for-review').textContent = dueCount;
+                
+                // --- NEW CODE FOR LEVEL CHART ---
+                const levelCounts = this.allUserQuestions.reduce((acc, q) => { 
+                    const level = q.srs_level || 0;
+                    acc[level] = (acc[level] || 0) + 1; 
+                    return acc; 
+                }, {});
+
+                const levelData = {
+                    labels: [],
+                    data: []
+                };
+                for (let i = 0; i <= 5; i++) {
+                    levelData.labels.push(`Level ${i}`);
+                    levelData.data.push(levelCounts[i] || 0);
+                }
+
+                // --- FIX: ใช้ levelChartCtx (ที่ดึงมาจาก getContext('2d')) ---
+                new Chart(levelChartCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: levelData.labels,
+                        datasets: [{
+                            label: 'จำนวนคำถาม',
+                            data: levelData.data,
+                            backgroundColor: [
+                                'rgba(108, 117, 125, 0.7)', // L0 - Grey
+                                'rgba(220, 53, 69, 0.7)',   // L1 - Red
+                                'rgba(255, 193, 7, 0.7)',  // L2 - Yellow
+                                'rgba(13, 202, 240, 0.7)',  // L3 - Cyan
+                                'rgba(13, 110, 253, 0.7)', // L4 - Blue
+                                'rgba(25, 135, 84, 0.7)'    // L5 - Green
+                            ]
+                        }]
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                    }
+                });
+                // --- END NEW CODE ---
+
+                // โค้ดเดิมสำหรับ Pie Chart
                 const categoryCounts = this.allUserQuestions.reduce((acc, q) => { acc[q.category] = (acc[q.category] || 0) + 1; return acc; }, {});
-                new Chart(document.getElementById('categoryChart').getContext('d'), { type: 'pie', data: { labels: Object.keys(categoryCounts), datasets: [{ data: Object.values(categoryCounts), backgroundColor: Object.keys(categoryCounts).map((_, i) => `hsl(${i * 60}, 70%, 70%)`), hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } } });
+                
+                // --- FIX: ใช้ categoryChartCtx (ที่ดึงมาจาก getContext('2d')) ---
+                new Chart(categoryChartCtx, { 
+                    type: 'pie', 
+                    data: { 
+                        labels: Object.keys(categoryCounts), 
+                        datasets: [{ 
+                            data: Object.values(categoryCounts), 
+                            backgroundColor: Object.keys(categoryCounts).map((_, i) => `hsl(${i * 60}, 70%, 70%)`), 
+                            hoverOffset: 4 
+                        }] 
+                    }, 
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        plugins: { legend: { position: 'right' } } 
+                    } 
+                });
             },
+            // --- END FIX ---
             
             formatTimeUntilNextReview(reviewDate) {
                 if (!(reviewDate instanceof Date)) return '';
@@ -405,19 +493,13 @@
                     filteredQuestions = this.allUserQuestions.filter(q => q.category === options.category);
                 }
 
-                // --- START CHANGE 3: Conditional Shuffle for Lessons ---
-                // ตรวจสอบว่าหมวดหมู่ขึ้นต้นด้วย "Lesson" หรือไม่
                 let isLesson = options.category.toLowerCase().startsWith('lesson');
                 
                 if (isLesson) {
-                    // ถ้าเป็น "บทเรียน" ให้เรียงตามลำดับ (สมมติว่าเรียงตาม 'question' เพื่อให้ง่าย)
-                    // ในระบบจริง อาจจะต้องมี "ลำดับ" (sequence number) ในข้อมูล
                     this.quizSession.dueQuestions = filteredQuestions.sort((a,b) => a.question.localeCompare(b.question));
                 } else {
-                    // ถ้าเป็นหมวดหมู่ปกติ หรือ "ทั้งหมด" ให้สุ่ม
                     this.quizSession.dueQuestions = filteredQuestions.sort(() => Math.random() - 0.5);
                 }
-                // --- END CHANGE 3 ---
                 
                 if (this.quizSession.dueQuestions.length === 0) {
                     this.showAlert('ไม่มีข้อมูลที่ตรงตามเงื่อนไขนี้', 'info');
@@ -430,18 +512,18 @@
 
             nextCard() {
                 SpeechService.cancelSpeech();
-                this.updateDebugInfo(); // อัปเดตก่อน shift() เพื่อแสดงผลตัวถัดไป
+                this.updateDebugInfo();
                 const badge = document.getElementById('due-count-badge');
                 if (badge) badge.textContent = `เหลือ: ${this.quizSession.dueQuestions.length}`;
                 const nextQ = this.quizSession.dueQuestions.shift();
                 if (nextQ) {
                     this.quizSession.currentQuestion = nextQ;
                     this.quizSession.lastRecordingBlob = null;
-                    this.updateDebugInfo(); // อัปเดตอีกครั้งหลัง shift() เพื่อแสดงผลปัจจุบัน
+                    this.updateDebugInfo();
                     this.runCardSequence(nextQ, 'ask');
                 } else {
-                    this.quizSession.currentQuestion = null; // เคลียร์คำถามปัจจุบันเมื่อจบรอบ
-                    this.updateDebugInfo(); // อัปเดตครั้งสุดท้ายเพื่อแสดง "Session End"
+                    this.quizSession.currentQuestion = null;
+                    this.updateDebugInfo();
                     this.showAlert('รอบนี้เสร็จแล้ว!', 'success');
                     this.stopActiveQuizDueCheck(); 
                     this.render('main-menu');
