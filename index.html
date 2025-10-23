@@ -75,13 +75,17 @@
     <template id="template-dashboard"><button id="back-to-menu-btn" class="btn btn-secondary mb-3 w-100"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button><div class="card mb-4"><div class="card-header bg-primary text-white"><h5><i class="bi bi-speedometer2"></i> แดชบอร์ดสรุปผล</h5></div><div class="card-body"><div class="row text-center mb-4"><div class="col"><h4 class="mb-0 text-primary" id="total-questions">0</h4><small class="text-muted">ข้อมูลทั้งหมด</small></div><div class="col"><h4 class="mb-0 text-warning" id="due-for-review">0</h4><small class="text-muted">ถึงรอบทวน</small></div></div><hr><h6 class="mb-3">สัดส่วนข้อมูลตามหมวดหมู่</h6><div style="position: relative; height:300px; width:100%"><canvas id="categoryChart"></canvas></div></div></div></template>
 
     <script type="module">
+        
+        // --- START CHANGE 2: Pimsleur-style content ---
+        // เปลี่ยนข้อมูลเริ่มต้นให้เป็น "ประโยค" มากขึ้น
         const INITIAL_QUESTIONS = [
-            { question: "This app uses ___ to store data online.", answer: "Firebase", hint: "แอปนี้ใช้ Firebase เพื่อเก็บข้อมูลออนไลน์", category: "เทคโนโลยี" },
-            { question: "Spaced repetition is a good ___ method.", answer: "learning", hint: "การทบทวนแบบเว้นระยะเป็นวิธีการเรียนรู้ที่ดี", category: "การเรียนรู้" },
-            { question: "Please ___ your answer clearly.", answer: "speak", hint: "กรุณาพูดคำตอบของคุณให้ชัดเจน", category: "การใช้งาน" },
-            { question: "I need to ___ this word again.", answer: "review", hint: "ฉันต้องทบทวนคำศัพท์นี้อีกครั้ง", category: "การเรียนรู้" },
-            { question: "The user ___ is very simple.", answer: "interface", hint: "ส่วนต่อประสานกับผู้ใช้นั้นเรียบง่ายมาก", category: "เทคโนโลยี" }
+            { question: "___ do you want?", answer: "What", hint: "คุณต้องการอะไร", category: "Lesson 1" },
+            { question: "I ___ water.", answer: "want", hint: "ฉันต้องการน้ำ", category: "Lesson 1" },
+            { question: "I want ___.", answer: "water", hint: "ฉันต้องการน้ำ", category: "Lesson 1" },
+            { question: "I want ___ water.", answer: "cold", hint: "ฉันต้องการน้ำเย็น", category: "Lesson 1" },
+            { question: "I want cold ___.", answer: "water", hint: "ฉันต้องการน้ำเย็น", category: "Lesson 1" }
         ];
+        // --- END CHANGE 2 ---
 
         const LocalStorageService = {
             getQuestions: async () => {
@@ -261,7 +265,18 @@
 
         const App = {
             allUserQuestions: [], quizSession: {}, dueCheckInterval: null, activeQuizInterval: null,
-            LEVEL_TO_MINUTES_MAP: { 1: 0.5, 2: 2, 3: 5, 4: 15, 5: 30 },
+            
+            // --- START CHANGE 1: Long-term SRS intervals ---
+            // เปลี่ยนจากหลัก "นาที" (ระยะสั้น) เป็น "ชั่วโมง" และ "วัน" (ระยะยาว)
+            // Original: { 1: 0.5, 2: 2, 3: 5, 4: 15, 5: 30 }
+            LEVEL_TO_MINUTES_MAP: { 
+                1: 10,    // 10 นาที (ทวนทันที)
+                2: 480,   // 8 ชั่วโมง
+                3: 1440,  // 1 วัน
+                4: 7200,  // 5 วัน
+                5: 21600  // 15 วัน
+            },
+            // --- END CHANGE 1 ---
             
             async init() {
                 await IndexedDBService.init();
@@ -341,7 +356,6 @@
                 return `<span class="badge bg-secondary">${diffDays} วัน</span>`;
             },
 
-            // --- START CHANGE 1: renderManageList (เพิ่มคอลัมน์ ID) ---
             async renderManageList() {
                 const listContainer = document.getElementById('questions-list');
                 if (!listContainer) return;
@@ -368,7 +382,6 @@
                 listContainer.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', async (e) => { if (confirm('ยืนยันการลบ?')) { await LocalStorageService.deleteQuestion(e.currentTarget.dataset.id); this.showAlert('ลบข้อมูลแล้ว', 'warning'); this.allUserQuestions = await LocalStorageService.getQuestions(); this.renderManageList(); } }));
                 listContainer.querySelectorAll('.recording-history-btn').forEach(b => b.addEventListener('click', (e) => this.showRecordingHistory(e.currentTarget.dataset.wordId, e.currentTarget.dataset.wordQ)));
             },
-            // --- END CHANGE 1 ---
             
             showStartSessionModal() {
                 const categorySelect = document.getElementById('category-select');
@@ -391,7 +404,21 @@
                 } else {
                     filteredQuestions = this.allUserQuestions.filter(q => q.category === options.category);
                 }
-                this.quizSession.dueQuestions = filteredQuestions.sort(() => Math.random() - 0.5); 
+
+                // --- START CHANGE 3: Conditional Shuffle for Lessons ---
+                // ตรวจสอบว่าหมวดหมู่ขึ้นต้นด้วย "Lesson" หรือไม่
+                let isLesson = options.category.toLowerCase().startsWith('lesson');
+                
+                if (isLesson) {
+                    // ถ้าเป็น "บทเรียน" ให้เรียงตามลำดับ (สมมติว่าเรียงตาม 'question' เพื่อให้ง่าย)
+                    // ในระบบจริง อาจจะต้องมี "ลำดับ" (sequence number) ในข้อมูล
+                    this.quizSession.dueQuestions = filteredQuestions.sort((a,b) => a.question.localeCompare(b.question));
+                } else {
+                    // ถ้าเป็นหมวดหมู่ปกติ หรือ "ทั้งหมด" ให้สุ่ม
+                    this.quizSession.dueQuestions = filteredQuestions.sort(() => Math.random() - 0.5);
+                }
+                // --- END CHANGE 3 ---
+                
                 if (this.quizSession.dueQuestions.length === 0) {
                     this.showAlert('ไม่มีข้อมูลที่ตรงตามเงื่อนไขนี้', 'info');
                     return;
@@ -617,7 +644,6 @@
                 }
             },
 
-            // --- START CHANGE 2: updateDebugInfo (แสดง Next ID) ---
             updateDebugInfo() {
                 const debugContainer = document.getElementById('debug-info');
                 if (!debugContainer) return;
@@ -625,10 +651,7 @@
                 const currentQ = this.quizSession.currentQuestion;
                 const queue = this.quizSession.dueQuestions;
 
-                // (Handle session end)
                 if (!currentQ && (!queue || queue.length === 0)) {
-                    // ถ้า currentQ เป็น null (หลังจบรอบ) แต่คิวยังไม่ว่าง (กำลังจะ nextCard)
-                    // ให้แสดงว่ากำลังจะจบรอบ
                     if (currentQ === null && queue && queue.length > 0) {
                          // ไม่ต้องทำอะไร รอ nextCard() เรียก updateDebugInfo() อีกที
                     } else {
@@ -643,23 +666,18 @@
                 let remainingQueueStr = '[]';
 
                 if (queue && queue.length > 0) {
-                    // คำถามถัดไปคือตัวแรกในคิว
                     nextIdShort = queue[0].id.slice(-4); 
-                    
-                    // แสดงคิวที่เหลือ (ถ้ามี)
                     if (queue.length > 1) {
                         remainingQueueStr = `[${queue.slice(1, 10).map(q => q.id.slice(-4)).join(', ')}]`;
                     }
                 }
 
-                // อัปเดต HTML
                 debugContainer.innerHTML = `
                     <p class="mb-1"><strong>Current ID:</strong> ${currentIdShort}</p>
                     <p class="mb-1"><strong>Next ID:</strong> ${nextIdShort}</p>
                     <p class="mb-0"><strong>Queue:</strong> ${remainingQueueStr}</p>
                 `;
             },
-            // --- END CHANGE 2 ---
 
             showAlert(msg, type = 'success') {
                 const c = document.getElementById('alert-container');
