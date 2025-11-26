@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>เว็บทบทวนคำศัพท์ (Offline)</title>
+    <title>เว็บทบทวนคำศัพท์ (Fixed)</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -96,7 +96,7 @@
         </div>
     </template>
 
-    <script type="module">
+    <script>
         
         const INITIAL_QUESTIONS = [
             { question: "___ do you want?", answer: "What", hint: "คุณต้องการอะไร", category: "Lesson 1" },
@@ -165,12 +165,16 @@
             recognition: null, isListening: false,
             init: () => {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                if (!SpeechRecognition) return;
+                if (!SpeechRecognition) {
+                    console.warn("Browser does not support Speech Recognition");
+                    return;
+                }
                 SpeechService.recognition = new SpeechRecognition();
                 SpeechService.recognition.continuous = false;
                 SpeechService.recognition.interimResults = false;
                 SpeechService.recognition.onresult = (event) => App.handleSpeechInput(event.results[0][0].transcript.trim());
                 SpeechService.recognition.onerror = (event) => {
+                    console.error("Speech Error:", event.error);
                     if (event.error === 'no-speech') {
                         const currentState = App.quizSession.currentState;
                         if (currentState === 'AWAITING_ANSWER' || currentState === 'AWAITING_LEVEL') {
@@ -183,7 +187,7 @@
                             });
                         }
                     } else if (event.error !== 'aborted' && event.error !== 'network') {
-                        App.showAlert(`เกิดข้อผิดพลาดในการรับเสียง: ${event.error}`, 'danger');
+                        App.showAlert(`เกิดข้อผิดพลาดรับเสียง: ${event.error}`, 'danger');
                     }
                 };
                 SpeechService.recognition.onend = () => App.handleSpeechEnd();
@@ -219,6 +223,11 @@
             mediaRecorder: null, audioChunks: [], isRecording: false, stream: null,
             startRecording: async () => {
                 if (RecordingService.isRecording) return;
+                
+                if(location.protocol === 'file:') {
+                    App.showAlert('การอัดเสียงอาจไม่ทำงานเมื่อเปิดไฟล์โดยตรง (file://) กรุณารันผ่าน Local Server', 'warning');
+                }
+
                 if (!navigator.mediaDevices?.getUserMedia) return App.showAlert('เบราว์เซอร์ไม่รองรับการอัดเสียง', 'danger');
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -228,7 +237,10 @@
                     RecordingService.mediaRecorder.ondataavailable = event => RecordingService.audioChunks.push(event.data);
                     RecordingService.mediaRecorder.start();
                     RecordingService.isRecording = true;
-                } catch (err) { App.showAlert('ไม่สามารถเข้าถึงไมโครโฟนได้', 'danger'); }
+                } catch (err) { 
+                    console.error(err);
+                    App.showAlert('ไม่สามารถเข้าถึงไมโครโฟนได้ (ตรวจสอบ Permission)', 'danger'); 
+                }
             },
             stopRecording: () => {
                 return new Promise(resolve => {
@@ -253,7 +265,11 @@
                     const request = indexedDB.open('audioHistoryDB', 1);
                     request.onerror = () => reject("Database error");
                     request.onsuccess = event => { IndexedDBService.db = event.target.result; resolve(); };
-                    request.onupgradeneeded = event => event.target.result.createObjectStore('recordings', { keyPath: 'id', autoIncrement: true });
+                    request.onupgradeneeded = event => {
+                        if(!event.target.result.objectStoreNames.contains('recordings')) {
+                            event.target.result.createObjectStore('recordings', { keyPath: 'id', autoIncrement: true });
+                        }
+                    };
                 });
             },
             addRecording: (wordId, audioBlob) => {
@@ -294,20 +310,28 @@
             },
             
             async init() {
-                await IndexedDBService.init();
-                await LocalStorageService.addInitialQuestionsForNewUser();
-                this.allUserQuestions = await LocalStorageService.getQuestions();
-                SpeechService.init();
-                this.render('main-menu');
-                this.startDueItemsCheck();
+                try {
+                    await IndexedDBService.init();
+                    await LocalStorageService.addInitialQuestionsForNewUser();
+                    this.allUserQuestions = await LocalStorageService.getQuestions();
+                    SpeechService.init();
+                    this.render('main-menu');
+                    this.startDueItemsCheck();
+                } catch (e) {
+                    console.error("Init Error:", e);
+                    this.showAlert("เกิดข้อผิดพลาดในการเริ่มต้นระบบ: " + e.message, 'danger');
+                }
             },
 
             render(page) {
                 const appRoot = document.getElementById('app-root');
                 appRoot.innerHTML = '';
-                const template = document.getElementById(`template-${page}`).content.cloneNode(true);
-                appRoot.appendChild(template);
-                this.bindPageEvents(page);
+                const template = document.getElementById(`template-${page}`);
+                if(template) {
+                    const content = template.content.cloneNode(true);
+                    appRoot.appendChild(content);
+                    this.bindPageEvents(page);
+                }
             },
             
             bindPageEvents(page) {
@@ -347,39 +371,36 @@
                 }
             },
             
-            // --- START FIX: แก้ไขฟังก์ชัน renderDashboard ---
             async renderDashboard() {
-                // ตรวจสอบว่ามี element canvas อยู่จริงหรือไม่ ก่อนวาด
                 const levelChartCtx = document.getElementById('levelChart')?.getContext('2d');
                 const categoryChartCtx = document.getElementById('categoryChart')?.getContext('2d');
 
-                if (!levelChartCtx || !categoryChartCtx) {
-                    console.error('ไม่พบ Canvas elements สำหรับวาดกราฟ');
-                    return; 
-                }
+                if (!levelChartCtx || !categoryChartCtx) return;
 
                 document.getElementById('total-questions').textContent = this.allUserQuestions.length;
                 const now = new Date();
                 const dueCount = this.allUserQuestions.filter(q => q.next_review_date <= now).length;
                 document.getElementById('due-for-review').textContent = dueCount;
                 
-                // --- NEW CODE FOR LEVEL CHART ---
                 const levelCounts = this.allUserQuestions.reduce((acc, q) => { 
                     const level = q.srs_level || 0;
                     acc[level] = (acc[level] || 0) + 1; 
                     return acc; 
                 }, {});
 
-                const levelData = {
-                    labels: [],
-                    data: []
-                };
+                const levelData = { labels: [], data: [] };
                 for (let i = 0; i <= 5; i++) {
                     levelData.labels.push(`Level ${i}`);
                     levelData.data.push(levelCounts[i] || 0);
                 }
 
-                // --- FIX: ใช้ levelChartCtx (ที่ดึงมาจาก getContext('2d')) ---
+                // FIX: Destroy old charts if they exist
+                const existingLevelChart = Chart.getChart("levelChart");
+                if (existingLevelChart) existingLevelChart.destroy();
+                
+                const existingCategoryChart = Chart.getChart("categoryChart");
+                if (existingCategoryChart) existingCategoryChart.destroy();
+
                 new Chart(levelChartCtx, {
                     type: 'bar',
                     data: {
@@ -387,14 +408,7 @@
                         datasets: [{
                             label: 'จำนวนคำถาม',
                             data: levelData.data,
-                            backgroundColor: [
-                                'rgba(108, 117, 125, 0.7)', // L0 - Grey
-                                'rgba(220, 53, 69, 0.7)',   // L1 - Red
-                                'rgba(255, 193, 7, 0.7)',  // L2 - Yellow
-                                'rgba(13, 202, 240, 0.7)',  // L3 - Cyan
-                                'rgba(13, 110, 253, 0.7)', // L4 - Blue
-                                'rgba(25, 135, 84, 0.7)'    // L5 - Green
-                            ]
+                            backgroundColor: ['#6c757d', '#dc3545', '#ffc107', '#0dcaf0', '#0d6efd', '#198754']
                         }]
                     },
                     options: { 
@@ -404,12 +418,9 @@
                         scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
                     }
                 });
-                // --- END NEW CODE ---
 
-                // โค้ดเดิมสำหรับ Pie Chart
                 const categoryCounts = this.allUserQuestions.reduce((acc, q) => { acc[q.category] = (acc[q.category] || 0) + 1; return acc; }, {});
                 
-                // --- FIX: ใช้ categoryChartCtx (ที่ดึงมาจาก getContext('2d')) ---
                 new Chart(categoryChartCtx, { 
                     type: 'pie', 
                     data: { 
@@ -417,7 +428,6 @@
                         datasets: [{ 
                             data: Object.values(categoryCounts), 
                             backgroundColor: Object.keys(categoryCounts).map((_, i) => `hsl(${i * 60}, 70%, 70%)`), 
-                            hoverOffset: 4 
                         }] 
                     }, 
                     options: { 
@@ -427,20 +437,14 @@
                     } 
                 });
             },
-            // --- END FIX ---
             
             formatTimeUntilNextReview(reviewDate) {
                 if (!(reviewDate instanceof Date)) return '';
                 const now = new Date();
                 const diffMs = reviewDate.getTime() - now.getTime();
                 if (diffMs <= 0) { return `<span class="badge bg-warning">0 วินาที</span>`; }
-                const diffSecs = Math.ceil(diffMs / 1000);
-                const diffMins = Math.ceil(diffMs / (1000 * 60));
-                const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
                 const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-                if (diffSecs < 60) return `<span class="badge bg-secondary">${diffSecs} วินาที</span>`;
-                if (diffMins < 60) return `<span class="badge bg-secondary">${diffMins} นาที</span>`;
-                if (diffHours < 24) return `<span class="badge bg-secondary">${diffHours} ชั่วโมง</span>`;
+                if (diffDays <= 1) return `<span class="badge bg-secondary">เร็วๆนี้</span>`;
                 return `<span class="badge bg-secondary">${diffDays} วัน</span>`;
             },
 
@@ -456,7 +460,7 @@
                     const timeStatusBadge = this.formatTimeUntilNextReview(q.next_review_date);
                     
                     tableHTML += `<tr>
-                        <td><small class="text-muted" style="word-break: break-all;">${q.id}</small></td>
+                        <td><small class="text-muted" style="word-break: break-all;">${q.id.toString().slice(-6)}</small></td>
                         <td>${q.question.replace('___', `<strong>${q.answer}</strong>`)}<br><small class="text-muted">${q.hint}</small><br><small class="text-info">${q.category}</small></td>
                         <td><span class="badge bg-info">Lv. ${q.srs_level}</span> ${timeStatusBadge}</td>
                         <td class="text-end">
@@ -537,8 +541,10 @@
                     quizArea.innerHTML = `<div class="my-4 p-3"><p class="fs-5 text-muted">เติมคำในช่องว่าง:</p><h2 class="display-6 my-3">${q.question}</h2><i class="bi bi-mic-fill fs-1"></i><p id="status-text" class="text-muted mt-2">กำลังพูดคำใบ้...</p></div>`;
                     SpeechService.speak(q.hint, 'th-TH', () => {
                         SpeechService.speak('กรุณาพูดคำตอบครับ', 'th-TH', () => {
-                            document.getElementById('status-text').textContent = 'กำลังฟังคำตอบ...';
-                            document.querySelector('#quiz-area .bi-mic-fill').classList.add('mic-listening');
+                            const st = document.getElementById('status-text');
+                            if(st) st.textContent = 'กำลังฟังคำตอบ...';
+                            const mic = document.querySelector('#quiz-area .bi-mic-fill');
+                            if(mic) mic.classList.add('mic-listening');
                             this.quizSession.currentState = 'AWAITING_ANSWER';
                             RecordingService.startRecording();
                             SpeechService.listen('en-US');
@@ -552,8 +558,10 @@
                         quizArea.innerHTML += `<i class="bi bi-mic-fill fs-1 mt-4"></i><p id="status-text" class="text-muted mt-2">กำลังพูดเฉลย...</p>`;
                         SpeechService.speak(q.question.replace('___', q.answer), 'en-US', () => {
                             SpeechService.speak('คุณจำได้ดีแค่ไหน? กรุณาบอกเลเวล 1 ถึง 5', 'th-TH', () => {
-                                document.getElementById('status-text').textContent = 'กรุณาบอกเลเวล 1 ถึง 5...';
-                                document.querySelector('#quiz-area .bi-mic-fill').classList.add('mic-listening');
+                                const st = document.getElementById('status-text');
+                                if(st) st.textContent = 'กรุณาบอกเลเวล 1 ถึง 5...';
+                                const mic = document.querySelector('#quiz-area .bi-mic-fill');
+                                if(mic) mic.classList.add('mic-listening');
                                 this.quizSession.currentState = 'AWAITING_LEVEL';
                                 SpeechService.listen('th-TH');
                             });
@@ -735,22 +743,21 @@
 
                 if (!currentQ && (!queue || queue.length === 0)) {
                     if (currentQ === null && queue && queue.length > 0) {
-                         // ไม่ต้องทำอะไร รอ nextCard() เรียก updateDebugInfo() อีกที
                     } else {
                         debugContainer.innerHTML = 'Session End';
                         return;
                     }
                 }
 
-                const currentIdShort = currentQ ? currentQ.id.slice(-4) : 'N/A';
+                const currentIdShort = currentQ ? currentQ.id.toString().slice(-4) : 'N/A';
                 
                 let nextIdShort = 'N/A';
                 let remainingQueueStr = '[]';
 
                 if (queue && queue.length > 0) {
-                    nextIdShort = queue[0].id.slice(-4); 
+                    nextIdShort = queue[0].id.toString().slice(-4); 
                     if (queue.length > 1) {
-                        remainingQueueStr = `[${queue.slice(1, 10).map(q => q.id.slice(-4)).join(', ')}]`;
+                        remainingQueueStr = `[${queue.slice(1, 10).map(q => q.id.toString().slice(-4)).join(', ')}]`;
                     }
                 }
 
@@ -771,7 +778,10 @@
             }
         };
 
-        App.init();
+        // Start App
+        document.addEventListener('DOMContentLoaded', () => {
+            App.init();
+        });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
