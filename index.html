@@ -98,13 +98,44 @@
 
     <script>
         
+        // **********************************************
+        // START: INITIAL_QUESTIONS (ปรับปรุงแล้ว)
+        // **********************************************
         const INITIAL_QUESTIONS = [
-            { question: "___ do you want?", answer: "What", hint: "คุณต้องการอะไร", category: "Lesson 1" },
-            { question: "I ___ water.", answer: "want", hint: "ฉันต้องการน้ำ", category: "Lesson 1" },
-            { question: "I want ___.", answer: "water", hint: "ฉันต้องการน้ำ", category: "Lesson 1" },
-            { question: "I want ___ water.", answer: "cold", hint: "ฉันต้องการน้ำเย็น", category: "Lesson 1" },
-            { question: "I want cold ___.", answer: "water", hint: "ฉันต้องการน้ำเย็น", category: "Lesson 1" }
+            { question: "I need to go to the ___.", answer: "market", hint: "ฉันต้องไปตลาด", category: "Daily Conversation" },
+            { question: "Can you help me ___ this?", answer: "find", hint: "คุณช่วยฉันหาอันนี้ได้ไหม", category: "Daily Conversation" },
+            { question: "What time is it ___?", answer: "now", hint: "ตอนนี้กี่โมงแล้ว", category: "Daily Conversation" },
+            { question: "I want a cup of ___.", answer: "coffee", hint: "ฉันต้องการกาแฟหนึ่งแก้ว", category: "Daily Conversation" },
+            { question: "Have a nice ___.", answer: "day", hint: "ขอให้เป็นวันที่ดี", category: "Daily Conversation" }
         ];
+        // **********************************************
+        // END: INITIAL_QUESTIONS
+        // **********************************************
+
+        // Utility function for Levenshtein Distance (Added for strictness)
+        const calculateLevenshteinDistance = (s1, s2) => {
+            s1 = s1.toLowerCase();
+            s2 = s2.toLowerCase();
+            const costs = new Array();
+            for (let i = 0; i <= s1.length; i++) {
+                let lastValue = i;
+                for (let j = 0; j <= s2.length; j++) {
+                    if (i === 0) {
+                        costs[j] = j;
+                    } else if (j > 0) {
+                        let newValue = costs[j - 1];
+                        if (s1.charAt(i - 1) !== s2.charAt(j - 1)) {
+                            newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+                        }
+                        costs[j - 1] = lastValue;
+                        lastValue = newValue;
+                    }
+                }
+                if (i > 0) costs[s2.length] = lastValue;
+            }
+            return costs[s2.length];
+        };
+
 
         const LocalStorageService = {
             getQuestions: async () => {
@@ -584,8 +615,39 @@
                 if (!q) return;
                 if (this.quizSession.currentState === 'AWAITING_ANSWER') {
                     const blob = await RecordingService.stopRecording();
+                    
                     const cleanString = (str) => str ? str.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"").trim() : "";
-                    const isCorrect = cleanString(transcript) === cleanString(q.answer);
+                    
+                    const cleanedAnswer = cleanString(q.answer);
+                    const cleanedTranscript = cleanString(transcript);
+                    
+                    let isCorrect = false;
+                    let distance = -1;
+
+                    if (cleanedAnswer === cleanedTranscript) {
+                        isCorrect = true; // ตอบถูก 100%
+                    } else {
+                        // คำนวณ Levenshtein Distance เพื่อกำหนดเกณฑ์การตอบผิด
+                        distance = calculateLevenshteinDistance(cleanedAnswer, cleanedTranscript);
+                        
+                        // เกณฑ์ความผิดพลาด (Tolerance)
+                        // ให้ผิดได้ 20% ของความยาวคำตอบ แต่ไม่ต่ำกว่า 1 และไม่เกิน 2
+                        const tolerance = Math.ceil(cleanedAnswer.length * 0.2); 
+                        const finalTolerance = Math.max(1, Math.min(2, tolerance)); 
+                        
+                        if (distance <= finalTolerance) {
+                            // ถือว่าถูก แม้จะมีข้อผิดพลาดเล็กน้อยตามเกณฑ์
+                            isCorrect = true; 
+                        } else if (cleanedTranscript.includes(cleanedAnswer) || cleanedAnswer.includes(cleanedTranscript)) {
+                            // กรณีผู้ใช้พูดประโยคยาว แต่มีคำตอบที่ถูกต้องอยู่ข้างใน (อนุโลม)
+                             isCorrect = true; 
+                        } else {
+                             isCorrect = false; 
+                        }
+                        
+                        this.updateDebugInfo(`D: ${distance}, T: ${finalTolerance}`);
+                    }
+
                     if(isCorrect) {
                         this.quizSession.lastRecordingBlob = blob;
                     }
@@ -626,7 +688,7 @@
             handleSpeechEnd() {
                 SpeechService.isListening = false;
                 const micIcon = document.querySelector('#quiz-area .bi-mic-fill');
-                if (micIcon) micIcon.classList.remove('mic-listening');
+                if (micIcon) mic.classList.remove('mic-listening');
             },
             
             async showRecordingHistory(wordId, wordQ) {
@@ -734,7 +796,7 @@
                 }
             },
 
-            updateDebugInfo() {
+            updateDebugInfo(extraInfo = '') {
                 const debugContainer = document.getElementById('debug-info');
                 if (!debugContainer) return;
 
@@ -765,6 +827,7 @@
                     <p class="mb-1"><strong>Current ID:</strong> ${currentIdShort}</p>
                     <p class="mb-1"><strong>Next ID:</strong> ${nextIdShort}</p>
                     <p class="mb-0"><strong>Queue:</strong> ${remainingQueueStr}</p>
+                    <p class="mb-0 text-danger">${extraInfo}</p>
                 `;
             },
 
