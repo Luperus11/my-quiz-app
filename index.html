@@ -79,10 +79,22 @@
     <template id="template-test">
         <div class="card">
             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                <h3 class="fs-5 mb-0"><i class="bi bi-robot"></i> Voice-Guided Mode</h3>
+                <h3 class="fs-5 mb-0" id="mode-header"><i class="bi bi-robot"></i> Voice-Guided Mode</h3>
                 <span id="due-count-badge" class="badge bg-light text-dark"></span>
             </div>
             <div class="card-body text-center" id="quiz-area"></div>
+            
+            <div class="card-footer bg-light p-3">
+                <div class="form-check form-switch mb-3 d-flex justify-content-end">
+                    <input class="form-check-input" type="checkbox" role="switch" id="typing-mode-toggle">
+                    <label class="form-check-label ms-2" for="typing-mode-toggle">Typing Mode</label>
+                </div>
+                <div id="typing-input-area" class="input-group hidden">
+                    <input type="text" id="typing-answer-input" class="form-control form-control-lg" placeholder="พิมพ์คำตอบที่นี่" aria-label="พิมพ์คำตอบ">
+                    <button class="btn btn-success btn-lg" type="button" id="submit-typing-btn">ส่ง</button>
+                </div>
+            </div>
+            
             <div id="debug-info" class="card-footer bg-light text-muted small" style="font-family: monospace;">
             </div>
         </div>
@@ -300,7 +312,7 @@
             
             cancelSpeech: () => { if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); } },
             listen: (lang) => {
-                if (!SpeechService.recognition) return;
+                if (!SpeechService.recognition || App.isTypingMode) return; // ไม่ต้องฟังถ้าเป็น Typing Mode
                 if (SpeechService.isListening) {
                     SpeechService.recognition.stop();
                 }
@@ -318,6 +330,7 @@
 
         const App = {
             allUserQuestions: [], quizSession: {}, dueCheckInterval: null, activeQuizInterval: null,
+            isTypingMode: false, // <<-- เพิ่มตัวแปรสถานะ
             
             LEVEL_TO_MINUTES_MAP: { 
                 0: 0,    // ทวนทันที (สำหรับคำตอบที่ผิดครั้งแรก)
@@ -342,6 +355,11 @@
             },
 
             render(page) {
+                // Clear state เมื่อเปลี่ยนหน้า
+                this.isTypingMode = false;
+                SpeechService.cancelSpeech();
+                SpeechService.recognition?.stop();
+
                 const appRoot = document.getElementById('app-root');
                 appRoot.innerHTML = '';
                 const template = document.getElementById(`template-${page}`);
@@ -435,9 +453,80 @@
                 } else if (page === 'dashboard') {
                     document.getElementById('back-to-menu-btn').addEventListener('click', () => this.render('main-menu'));
                     this.renderDashboard();
+                } else if (page === 'test') {
+                    // START: Logic สำหรับ Typing Mode (เพิ่มใหม่)
+                    const toggle = document.getElementById('typing-mode-toggle');
+                    if (toggle) {
+                        toggle.checked = this.isTypingMode;
+                        toggle.addEventListener('change', (e) => this.toggleTypingMode(e.target.checked));
+                    }
+                    
+                    const submitBtn = document.getElementById('submit-typing-btn');
+                    const inputField = document.getElementById('typing-answer-input');
+                    if (submitBtn && inputField) {
+                        submitBtn.addEventListener('click', () => this.handleTypingInput(inputField.value));
+                        inputField.addEventListener('keypress', (e) => {
+                            if (e.key === 'Enter') this.handleTypingInput(inputField.value);
+                        });
+                    }
+                    // END: Logic สำหรับ Typing Mode
                 }
             },
             
+            // START: Logic สำหรับ Typing Mode
+            toggleTypingMode(isTyping) {
+                this.isTypingMode = isTyping;
+                const header = document.getElementById('mode-header');
+                const micIcon = document.querySelector('#quiz-area .bi-mic-fill');
+                const typingArea = document.getElementById('typing-input-area');
+                const statusText = document.getElementById('status-text');
+                const inputField = document.getElementById('typing-answer-input');
+
+                SpeechService.cancelSpeech();
+                SpeechService.recognition?.stop();
+
+                if (isTyping) {
+                    if (header) header.innerHTML = '<i class="bi bi-keyboard-fill"></i> Typing Mode';
+                    if (micIcon) micIcon.classList.add('hidden');
+                    if (typingArea) typingArea.classList.remove('hidden');
+                    if (statusText) statusText.textContent = 'กรุณาพิมพ์คำตอบ';
+                    if (inputField) {
+                        inputField.value = '';
+                        inputField.focus();
+                    }
+                } else {
+                    if (header) header.innerHTML = '<i class="bi bi-robot"></i> Voice-Guided Mode';
+                    if (micIcon) micIcon.classList.remove('hidden');
+                    if (typingArea) typingArea.classList.add('hidden');
+                    // ถ้าเปลี่ยนกลับมา Voice-Guided mode ให้พยายามเริ่ม Sequence ใหม่
+                    if (this.quizSession.currentQuestion && this.quizSession.currentState === 'AWAITING_ANSWER') {
+                         this.runCardSequence(this.quizSession.currentQuestion, 'ask');
+                    } else if (this.quizSession.currentQuestion && this.quizSession.currentState === 'AWAITING_LEVEL') {
+                         this.runCardSequence(this.quizSession.currentQuestion, 'feedback', { isCorrect: true, transcript: 'ถูกต้องแล้ว' }); // Force re-run Level selection
+                    }
+                }
+            },
+            
+            handleTypingInput(typedAnswer) {
+                if (!this.isTypingMode || this.quizSession.currentState !== 'AWAITING_ANSWER') return;
+                
+                const inputField = document.getElementById('typing-answer-input');
+                if (!typedAnswer.trim()) {
+                    this.showAlert('กรุณาป้อนคำตอบ', 'warning');
+                    inputField.focus();
+                    return;
+                }
+
+                const q = this.quizSession.currentQuestion;
+                const cleanString = (str) => str ? str.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"").trim() : "";
+                
+                const isCorrect = Levenshtein.isCloseEnough(cleanString(typedAnswer), cleanString(q.answer));
+                
+                inputField.value = ''; // Clear input
+                this.runCardSequence(q, 'feedback', { isCorrect, transcript: typedAnswer });
+            },
+            // END: Logic สำหรับ Typing Mode
+
             async renderDashboard() {
                 const levelChartCtx = document.getElementById('levelChart')?.getContext('2d');
                 const categoryChartCtx = document.getElementById('categoryChart')?.getContext('2d');
@@ -731,6 +820,7 @@
 
             nextCard() {
                 SpeechService.cancelSpeech();
+                SpeechService.recognition?.stop(); // หยุดฟังเมื่อเปลี่ยนคำถาม
                 this.updateDebugInfo();
                 const badge = document.getElementById('due-count-badge');
                 if (badge) badge.textContent = `เหลือ: ${this.quizSession.dueQuestions.length}`;
@@ -738,7 +828,13 @@
                 if (nextQ) {
                     this.quizSession.currentQuestion = nextQ;
                     this.updateDebugInfo();
-                    this.runCardSequence(nextQ, 'ask');
+                    
+                    // หากอยู่ใน Typing Mode ไม่ต้องพูดและไม่ต้องเปิดไมค์
+                    if (this.isTypingMode) {
+                        this.runCardSequence(nextQ, 'ask_typing_mode');
+                    } else {
+                        this.runCardSequence(nextQ, 'ask');
+                    }
                 } else {
                     this.quizSession.currentQuestion = null;
                     this.updateDebugInfo();
@@ -752,7 +848,7 @@
                 const quizArea = document.getElementById('quiz-area');
                 if (!quizArea) return;
                 
-                // --- Step Ask: อ่านคำใบ้และรอคำตอบ ---
+                // --- Step Ask: อ่านคำใบ้และรอคำตอบ (Voice) ---
                 if (step === 'ask') {
                     quizArea.innerHTML = `<div class="my-4 p-3"><p class="fs-5 text-muted">เติมคำในช่องว่าง:</p><h2 class="display-6 my-3">${q.question}</h2><i class="bi bi-mic-fill fs-1"></i><p id="status-text" class="text-muted mt-2">กำลังพูดคำใบ้...</p></div>`;
                     SpeechService.speak(q.hint, 'th-TH', () => {
@@ -766,22 +862,49 @@
                         });
                     });
                 } 
+                
+                // --- Step Ask (Typing Mode) ---
+                else if (step === 'ask_typing_mode') {
+                    quizArea.innerHTML = `<div class="my-4 p-3"><p class="fs-5 text-muted">เติมคำในช่องว่าง:</p><h2 class="display-6 my-3">${q.question}</h2><p class="fs-4 text-primary mt-4">คำใบ้: ${q.hint}</p><p id="status-text" class="text-muted mt-2">กรุณาพิมพ์คำตอบ</p></div>`;
+                    this.quizSession.currentState = 'AWAITING_ANSWER';
+                    document.getElementById('typing-answer-input')?.focus();
+                }
+
                 // --- Step Feedback: แสดงผลลัพธ์และรอ Level ---
                 else if (step === 'feedback') {
                     const fullSentence = q.question.replace('___', `<strong>${q.answer}</strong>`);
                     quizArea.innerHTML = `<div class="my-4 p-3"><h2 class="${data.isCorrect ? "text-success" : "text-danger"}">${data.isCorrect ? "ถูกต้อง!" : "ยังไม่ถูกต้อง"}</h2><p class="text-muted">คุณตอบว่า: <strong class="text-dark">"${data.transcript || '...'}"</strong></p><hr><p class="mt-3">ประโยคที่สมบูรณ์คือ:</p><h4 class="mt-3">${fullSentence}</h4></div>`;
 
                     if (data.isCorrect) {
-                        quizArea.innerHTML += `<i class="bi bi-mic-fill fs-1 mt-4"></i><p id="status-text" class="text-muted mt-2">กำลังพูดเฉลย...</p>`;
+                        quizArea.innerHTML += `<i class="bi bi-mic-fill fs-1 mt-4 ${this.isTypingMode ? 'hidden' : ''}"></i><p id="status-text" class="text-muted mt-2">กำลังพูดเฉลย...</p>`;
                         SpeechService.speak(q.question.replace('___', q.answer), 'en-US', () => {
                             SpeechService.speak('คุณจำได้ดีแค่ไหน? กรุณาบอกเลเวล 1 ถึง 5 หรือพูดว่า ข้าม/เมนูหลัก', 'th-TH', () => {
                                 const st = document.getElementById('status-text');
                                 if(st) st.textContent = 'กรุณาบอกเลเวล 1 ถึง 5 หรือพูดว่า ข้าม/เมนูหลัก...';
                                 const mic = document.querySelector('#quiz-area .bi-mic-fill');
-                                if(mic) mic.classList.add('mic-listening');
+                                if(mic && !this.isTypingMode) mic.classList.add('mic-listening');
                                 this.quizSession.currentState = 'AWAITING_LEVEL';
                                 
-                                SpeechService.listen('th-TH');
+                                // หากอยู่ใน Typing Mode ไม่ต้องเปิดไมค์รอ Level
+                                if (!this.isTypingMode) {
+                                    SpeechService.listen('th-TH');
+                                } else {
+                                     // ใน Typing Mode, ให้ผู้ใช้กดปุ่มใน Debug Info หรือรอคำสั่งเสียง (ถ้าเปิดไมค์)
+                                     // (ในโค้ดนี้ จะไม่มีปุ่มให้กดระดับ Level เมื่อเป็น Typing Mode)
+                                     const levelButtons = `
+                                         <div class="mt-4">
+                                            <p class="text-muted">เลือก Level:</p>
+                                            <button onclick="App.setReviewByLevel(1)" class="btn btn-sm btn-danger me-1">1</button>
+                                            <button onclick="App.setReviewByLevel(2)" class="btn btn-sm btn-warning me-1">2</button>
+                                            <button onclick="App.setReviewByLevel(3)" class="btn btn-sm btn-info me-1">3</button>
+                                            <button onclick="App.setReviewByLevel(4)" class="btn btn-sm btn-primary me-1">4</button>
+                                            <button onclick="App.setReviewByLevel(5)" class="btn btn-sm btn-success">5</button>
+                                         </div>
+                                     `;
+                                     quizArea.innerHTML += levelButtons;
+                                     // แต่ยังเปิด Voice Recognition ทิ้งไว้ เผื่อผู้ใช้จะพูด "ข้าม" หรือ "เมนูหลัก"
+                                     SpeechService.listen('th-TH');
+                                }
                             });
                         });
                     } else {
@@ -802,7 +925,7 @@
                 const q = this.quizSession.currentQuestion;
                 if (!q) return;
                 
-                if (this.quizSession.currentState === 'AWAITING_ANSWER') {
+                if (this.quizSession.currentState === 'AWAITING_ANSWER' && !this.isTypingMode) {
                     const cleanString = (str) => str ? str.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"").trim() : "";
                     
                     const isCorrect = Levenshtein.isCloseEnough(cleanString(transcript), cleanString(q.answer));
@@ -856,10 +979,10 @@
                         SpeechService.speak('ไม่เข้าใจระดับที่เลือก กรุณาลองอีกครั้งครับ', 'th-TH', () => {
                             this.quizSession.currentState = 'AWAITING_LEVEL';
                             const micIcon = document.querySelector('#quiz-area .bi-mic-fill');
-                            if (micIcon) micIcon.classList.add('mic-listening');
+                            if (micIcon && !this.isTypingMode) micIcon.classList.add('mic-listening');
                             const statusText = document.getElementById('status-text');
                             if(statusText) statusText.textContent = 'กำลังฟัง...';
-                            SpeechService.listen('th-TH');
+                            if (!this.isTypingMode) SpeechService.listen('th-TH');
                         });
                     }
                 }
@@ -868,11 +991,13 @@
             handleSpeechEnd() {
                 SpeechService.isListening = false;
                 const micIcon = document.querySelector('#quiz-area .bi-mic-fill');
-                if (micIcon) mic.classList.remove('mic-listening');
+                if (micIcon) micIcon.classList.remove('mic-listening');
             },
             
             async setReviewByLevel(level) {
                 this.quizSession.currentState = null;
+                SpeechService.cancelSpeech();
+                SpeechService.recognition?.stop();
                 const q = this.quizSession.currentQuestion;
                 if (!q) return;
                 const quizArea = document.getElementById('quiz-area');
