@@ -37,8 +37,6 @@
         </div>
     </div>
 
-    <div class="modal fade" id="historyModal" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="history-modal-title">ประวัติ</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body" id="history-modal-body"></div></div></div></div>
-    
     <div class="modal fade" id="startSessionModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -57,7 +55,7 @@
         </div>
     </div>
 
-    <template id="template-main-menu"><div class="card"><div class="card-body"><div class="d-flex justify-content-between align-items-center mb-4"><h5 class="mb-0" id="welcome-message">โปรแกรมทบทวนคำศัพท์</h5></div><div class="text-center p-2"><h1 class="text-primary mb-3">เว็บทบทวนคำศัพท์</h1><p class="text-muted mb-4">เลือกเมนูเพื่อเริ่มต้น</p><div class="d-grid gap-3"><button id="start-new-btn" class="btn btn-primary btn-lg"><i class="bi bi-stars"></i> เริ่มรอบทบทวน</button><button id="manage-btn" class="btn btn-outline-secondary"><i class="bi bi-gear-fill"></i> จัดการข้อมูล</button><button id="dashboard-btn" class="btn btn-outline-info"><i class="bi bi-graph-up"></i> ดูสถิติ</button></div></div></div></div></template>
+    <template id="template-main-menu"><div class="card"><div class="card-body"><div class="d-flex justify-content-between align-items-center mb-4"><h5 class="mb-0" id="welcome-message">โปรแกรมทบทวนคำศัพท์</h5></div><div class="text-center p-2"><h1 class="text-primary mb-3">เว็บทบทวนคำศัพท์</h1><p class="text-muted mb-4">เลือกเมนูเพื่อเริ่มต้น</p><div class="d-grid gap-3"><button id="start-new-btn" class="btn btn-primary btn-lg"><i class="bi bi-stars"></i> เริ่มรอบทบทวน</button><button id="manage-btn" class="btn btn-outline-secondary"><i class="bi bi-gear-fill"></i> จัดการข้อมูล / ตั้งค่า</button><button id="dashboard-btn" class="btn btn-outline-info"><i class="bi bi-graph-up"></i> ดูสถิติ</button></div></div></div></div></template>
     
     <template id="template-test">
         <div class="card">
@@ -71,7 +69,25 @@
         </div>
     </template>
 
-    <template id="template-manage"><button id="back-to-menu-btn" class="btn btn-secondary mb-3 w-100"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button><div class="card mb-4"><div class="card-header bg-info text-white"><h5><i class="bi bi-plus-circle-fill"></i> เพิ่มข้อมูลใหม่ (คำศัพท์หรือประโยค)</h5></div><div class="card-body"><form id="add-form"><div class="mb-3"><label for="new-question" class="form-label">ประโยค (อังกฤษ, เว้นด้วย ___)</label><input type="text" id="new-question" class="form-control" placeholder="เช่น The ___ stores electrical energy." required></div><div class="mb-3"><label for="new-answer-word" class="form-label">คำตอบ (ที่เติมในช่องว่าง)</label><input type="text" id="new-answer-word" class="form-control" placeholder="เช่น capacitor" required></div><div class="mb-3"><label for="new-hint" class="form-label">ประโยคคำใบ้ (ไทย)</label><input type="text" id="new-hint" class="form-control" placeholder="เช่น ตัวเก็บประจุใช้เก็บพลังงานไฟฟ้า" required></div><div class="mb-3"><label for="new-category" class="form-label">หมวดหมู่</label><input type="text" id="new-category" class="form-control" required></div><button type="submit" class="btn btn-success w-100">เพิ่มข้อมูล</button></form></div></div><div class="card"><div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center"><h5><i class="bi bi-card-list"></i> คลังข้อมูลทั้งหมด</h5><button id="reset-data-btn" class="btn btn-danger btn-sm"><i class="bi bi-trash3-fill"></i> รีเซ็ตข้อมูลทั้งหมด</button></div><div class="card-body"><div id="questions-list" class="table-responsive"></div></div></div></template>
+    <template id="template-manage">
+        <button id="back-to-menu-btn" class="btn btn-secondary mb-3 w-100"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button>
+        
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark"><h5><i class="bi bi-megaphone-fill"></i> ตั้งค่าเสียงอ่าน (AI Voice)</h5></div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="th-voice-select" class="form-label">เสียงอ่านภาษาไทย (สำหรับคำใบ้)</label>
+                    <select id="th-voice-select" class="form-select"></select>
+                </div>
+                <div class="mb-3">
+                    <label for="en-voice-select" class="form-label">เสียงอ่านภาษาอังกฤษ (สำหรับประโยค/คำตอบ)</label>
+                    <select id="en-voice-select" class="form-select"></select>
+                </div>
+                <button id="test-voice-btn" class="btn btn-outline-secondary w-100">ทดสอบเสียง</button>
+            </div>
+        </div>
+
+        <div class="card mb-4"><div class="card-header bg-info text-white"><h5><i class="bi bi-plus-circle-fill"></i> เพิ่มข้อมูลใหม่ (คำศัพท์หรือประโยค)</h5></div><div class="card-body"><form id="add-form"><div class="mb-3"><label for="new-question" class="form-label">ประโยค (อังกฤษ, เว้นด้วย ___)</label><input type="text" id="new-question" class="form-control" placeholder="เช่น The ___ stores electrical energy." required></div><div class="mb-3"><label for="new-answer-word" class="form-label">คำตอบ (ที่เติมในช่องว่าง)</label><input type="text" id="new-answer-word" class="form-control" placeholder="เช่น capacitor" required></div><div class="mb-3"><label for="new-hint" class="form-label">ประโยคคำใบ้ (ไทย)</label><input type="text" id="new-hint" class="form-control" placeholder="เช่น ตัวเก็บประจุใช้เก็บพลังงานไฟฟ้า" required></div><div class="mb-3"><label for="new-category" class="form-label">หมวดหมู่</label><input type="text" id="new-category" class="form-control" required></div><button type="submit" class="btn btn-success w-100">เพิ่มข้อมูล</button></form></div></div><div class="card"><div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center"><h5><i class="bi bi-card-list"></i> คลังข้อมูลทั้งหมด</h5><button id="reset-data-btn" class="btn btn-danger btn-sm"><i class="bi bi-trash3-fill"></i> รีเซ็ตข้อมูลทั้งหมด</button></div><div class="card-body"><div id="questions-list" class="table-responsive"></div></div></div></template>
     
     <template id="template-dashboard">
         <button id="back-to-menu-btn" class="btn btn-secondary mb-3 w-100"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button>
@@ -98,43 +114,45 @@
 
     <script>
         
-        // **********************************************
-        // START: INITIAL_QUESTIONS (ปรับปรุงแล้ว)
-        // **********************************************
         const INITIAL_QUESTIONS = [
-            { question: "I need to go to the ___.", answer: "market", hint: "ฉันต้องไปตลาด", category: "Daily Conversation" },
-            { question: "Can you help me ___ this?", answer: "find", hint: "คุณช่วยฉันหาอันนี้ได้ไหม", category: "Daily Conversation" },
-            { question: "What time is it ___?", answer: "now", hint: "ตอนนี้กี่โมงแล้ว", category: "Daily Conversation" },
-            { question: "I want a cup of ___.", answer: "coffee", hint: "ฉันต้องการกาแฟหนึ่งแก้ว", category: "Daily Conversation" },
-            { question: "Have a nice ___.", answer: "day", hint: "ขอให้เป็นวันที่ดี", category: "Daily Conversation" }
+            { question: "___ do you want?", answer: "What", hint: "คุณต้องการอะไร", category: "Lesson 1" },
+            { question: "I ___ water.", answer: "want", hint: "ฉันต้องการน้ำ", category: "Lesson 1" },
+            { question: "I want ___.", answer: "water", hint: "ฉันต้องการน้ำ", category: "Lesson 1" },
+            { question: "I want ___ water.", answer: "cold", hint: "ฉันต้องการน้ำเย็น", category: "Lesson 1" },
+            { question: "I want cold ___.", answer: "water", hint: "ฉันต้องการน้ำเย็น", category: "Lesson 1" }
         ];
-        // **********************************************
-        // END: INITIAL_QUESTIONS
-        // **********************************************
 
-        // Utility function for Levenshtein Distance (Added for strictness)
-        const calculateLevenshteinDistance = (s1, s2) => {
-            s1 = s1.toLowerCase();
-            s2 = s2.toLowerCase();
-            const costs = new Array();
-            for (let i = 0; i <= s1.length; i++) {
-                let lastValue = i;
-                for (let j = 0; j <= s2.length; j++) {
-                    if (i === 0) {
-                        costs[j] = j;
-                    } else if (j > 0) {
-                        let newValue = costs[j - 1];
-                        if (s1.charAt(i - 1) !== s2.charAt(j - 1)) {
-                            newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+        // --- Levenshtein Distance Function (For flexible answer checking) ---
+        const Levenshtein = {
+            distance: (s1, s2) => {
+                s1 = s1.toLowerCase();
+                s2 = s2.toLowerCase();
+                const costs = [];
+                for (let i = 0; i <= s1.length; i++) {
+                    let lastValue = i;
+                    for (let j = 0; j <= s2.length; j++) {
+                        if (i === 0) {
+                            costs[j] = j;
+                        } else if (j > 0) {
+                            let newValue = costs[j - 1];
+                            if (s1.charAt(i - 1) !== s2.charAt(j - 1)) {
+                                newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+                            }
+                            costs[j - 1] = lastValue;
+                            lastValue = newValue;
                         }
-                        costs[j - 1] = lastValue;
-                        lastValue = newValue;
                     }
+                    if (i > 0) costs[s2.length] = lastValue;
                 }
-                if (i > 0) costs[s2.length] = lastValue;
+                return costs[s2.length];
+            },
+            isCloseEnough: (s1, s2) => {
+                const maxLen = Math.max(s1.length, s2.length);
+                const maxError = Math.floor(maxLen * 0.25) + 1; // Allow up to 25% error + 1 char
+                return Levenshtein.distance(s1, s2) <= maxError;
             }
-            return costs[s2.length];
         };
+        // -------------------------------------------------------------------
 
 
         const LocalStorageService = {
@@ -223,16 +241,33 @@
                 };
                 SpeechService.recognition.onend = () => App.handleSpeechEnd();
             },
+            
             speak: (text, lang, onEndCallback = null) => {
                 if ('speechSynthesis' in window) {
                     window.speechSynthesis.cancel();
                     const utterance = new SpeechSynthesisUtterance(text);
+                    
+                    const voiceKey = (lang.startsWith('th')) ? 'thVoiceURI' : 'enVoiceURI';
+                    const savedVoiceURI = localStorage.getItem(voiceKey);
+
                     utterance.lang = lang;
-                    utterance.rate = (lang === 'th-TH') ? 0.9 : 1.0;
+                    utterance.rate = (lang.startsWith('th')) ? 0.9 : 1.0;
+
+                    if (savedVoiceURI) {
+                        const voice = speechSynthesis.getVoices().find(v => v.voiceURI === savedVoiceURI);
+                        if (voice) {
+                            utterance.voice = voice;
+                            utterance.lang = voice.lang; 
+                        }
+                    } else {
+                        utterance.lang = lang;
+                    }
+
                     if (onEndCallback) utterance.onend = onEndCallback;
                     window.speechSynthesis.speak(utterance);
                 } else if (onEndCallback) { onEndCallback(); }
             },
+            
             cancelSpeech: () => { if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); } },
             listen: (lang) => {
                 if (!SpeechService.recognition) return;
@@ -250,84 +285,6 @@
             },
         };
 
-        const RecordingService = {
-            mediaRecorder: null, audioChunks: [], isRecording: false, stream: null,
-            startRecording: async () => {
-                if (RecordingService.isRecording) return;
-                
-                if(location.protocol === 'file:') {
-                    App.showAlert('การอัดเสียงอาจไม่ทำงานเมื่อเปิดไฟล์โดยตรง (file://) กรุณารันผ่าน Local Server', 'warning');
-                }
-
-                if (!navigator.mediaDevices?.getUserMedia) return App.showAlert('เบราว์เซอร์ไม่รองรับการอัดเสียง', 'danger');
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    RecordingService.stream = stream;
-                    RecordingService.mediaRecorder = new MediaRecorder(stream);
-                    RecordingService.audioChunks = [];
-                    RecordingService.mediaRecorder.ondataavailable = event => RecordingService.audioChunks.push(event.data);
-                    RecordingService.mediaRecorder.start();
-                    RecordingService.isRecording = true;
-                } catch (err) { 
-                    console.error(err);
-                    App.showAlert('ไม่สามารถเข้าถึงไมโครโฟนได้ (ตรวจสอบ Permission)', 'danger'); 
-                }
-            },
-            stopRecording: () => {
-                return new Promise(resolve => {
-                    if (!RecordingService.mediaRecorder || RecordingService.mediaRecorder.state === "inactive") return resolve(null);
-                    RecordingService.mediaRecorder.onstop = () => {
-                        const audioBlob = new Blob(RecordingService.audioChunks, { type: 'audio/webm' });
-                        RecordingService.stream?.getTracks().forEach(track => track.stop());
-                        RecordingService.stream = null;
-                        RecordingService.isRecording = false;
-                        resolve(audioBlob);
-                    };
-                    RecordingService.mediaRecorder.stop();
-                });
-            }
-        };
-
-        const IndexedDBService = {
-            db: null,
-            init: () => {
-                return new Promise((resolve, reject) => {
-                    if (IndexedDBService.db) return resolve();
-                    const request = indexedDB.open('audioHistoryDB', 1);
-                    request.onerror = () => reject("Database error");
-                    request.onsuccess = event => { IndexedDBService.db = event.target.result; resolve(); };
-                    request.onupgradeneeded = event => {
-                        if(!event.target.result.objectStoreNames.contains('recordings')) {
-                            event.target.result.createObjectStore('recordings', { keyPath: 'id', autoIncrement: true });
-                        }
-                    };
-                });
-            },
-            addRecording: (wordId, audioBlob) => {
-                return new Promise((resolve, reject) => {
-                    const transaction = IndexedDBService.db.transaction(['recordings'], 'readwrite');
-                    const store = transaction.objectStore('recordings');
-                    const request = store.add({ wordId, audioBlob, timestamp: new Date() });
-                    request.onsuccess = () => resolve();
-                    request.onerror = event => reject(event.target.error);
-                });
-            },
-            getRecordingsForWord: (wordId) => {
-                return new Promise((resolve) => {
-                    const recordings = [];
-                    const transaction = IndexedDBService.db.transaction(['recordings'], 'readonly');
-                    transaction.objectStore('recordings').openCursor().onsuccess = event => {
-                        const cursor = event.target.result;
-                        if (cursor) {
-                            if (cursor.value.wordId === wordId) recordings.push(cursor.value);
-                            cursor.continue();
-                        } else {
-                            resolve(recordings.sort((a, b) => a.timestamp - b.timestamp));
-                        }
-                    };
-                });
-            }
-        };
 
         const App = {
             allUserQuestions: [], quizSession: {}, dueCheckInterval: null, activeQuizInterval: null,
@@ -342,7 +299,7 @@
             
             async init() {
                 try {
-                    await IndexedDBService.init();
+                    // ลบ IndexedDBService.init() ออกไป
                     await LocalStorageService.addInitialQuestionsForNewUser();
                     this.allUserQuestions = await LocalStorageService.getQuestions();
                     SpeechService.init();
@@ -373,6 +330,7 @@
                 } else if (page === 'manage') {
                     document.getElementById('back-to-menu-btn').addEventListener('click', () => this.render('main-menu'));
                     this.renderManageList();
+                    this.setupManageVoiceControls();
                     document.getElementById('add-form').addEventListener('submit', async (e) => {
                         e.preventDefault();
                         await LocalStorageService.addQuestion({ 
@@ -469,6 +427,79 @@
                 });
             },
             
+            // --- Voice Selection Logic ---
+            setupManageVoiceControls() {
+                this.updateVoiceSelects();
+                document.getElementById('th-voice-select').addEventListener('change', (e) => this.saveVoiceSelection('thVoiceURI', e.target.value));
+                document.getElementById('en-voice-select').addEventListener('change', (e) => this.saveVoiceSelection('enVoiceURI', e.target.value));
+                
+                const testBtn = document.getElementById('test-voice-btn');
+                if(testBtn) {
+                    testBtn.addEventListener('click', () => this.testVoices());
+                }
+            },
+
+            updateVoiceSelects() {
+                const thSelect = document.getElementById('th-voice-select');
+                const enSelect = document.getElementById('en-voice-select');
+                if (!thSelect || !enSelect || !('speechSynthesis' in window)) return;
+                
+                const savedThURI = localStorage.getItem('thVoiceURI');
+                const savedEnURI = localStorage.getItem('enVoiceURI');
+
+                const populateSelect = (selectElement, langPrefix, savedURI) => {
+                    selectElement.innerHTML = '';
+                    const voices = window.speechSynthesis.getVoices().filter(v => v.lang.startsWith(langPrefix));
+
+                    if (voices.length === 0) {
+                        selectElement.add(new Option(`(ไม่พบเสียง ${langPrefix.toUpperCase()})`, ''));
+                        return;
+                    }
+
+                    voices.forEach((voice, index) => {
+                        const serviceType = voice.localService ? ' (Native)' : ' (Cloud)'; 
+                        const option = new Option(`${voice.name} (${voice.lang})${serviceType}`, voice.voiceURI);
+                        
+                        if (voice.voiceURI === savedURI || (index === 0 && !savedURI) || (voice.default && !savedURI)) {
+                            option.selected = true;
+                            if (!savedURI) {
+                                localStorage.setItem((langPrefix === 'th') ? 'thVoiceURI' : 'enVoiceURI', voice.voiceURI);
+                            }
+                        }
+                        selectElement.add(option);
+                    });
+                };
+                
+                const voices = window.speechSynthesis.getVoices();
+                if (voices.length === 0 && 'onvoiceschanged' in speechSynthesis) {
+                    speechSynthesis.onvoiceschanged = () => {
+                        populateSelect(thSelect, 'th', savedThURI);
+                        populateSelect(enSelect, 'en', savedEnURI);
+                        speechSynthesis.onvoiceschanged = null;
+                    };
+                } else {
+                    populateSelect(thSelect, 'th', savedThURI);
+                    populateSelect(enSelect, 'en', savedEnURI);
+                }
+            },
+
+            saveVoiceSelection(key, uri) {
+                localStorage.setItem(key, uri);
+                this.showAlert('บันทึกการตั้งค่าเสียงแล้ว!', 'success');
+            },
+
+            testVoices() {
+                const thText = 'สวัสดีครับ นี่คือเสียงอ่านภาษาไทยที่เลือกไว้';
+                const enText = 'Hello. This is the English voice test for the selected voice.';
+                
+                this.showAlert('กำลังทดสอบเสียง...', 'info');
+
+                SpeechService.speak(thText, 'th-TH', () => {
+                    SpeechService.speak(enText, 'en-US');
+                });
+            },
+            // --- End Voice Selection Logic ---
+            
             formatTimeUntilNextReview(reviewDate) {
                 if (!(reviewDate instanceof Date)) return '';
                 const now = new Date();
@@ -495,7 +526,6 @@
                         <td>${q.question.replace('___', `<strong>${q.answer}</strong>`)}<br><small class="text-muted">${q.hint}</small><br><small class="text-info">${q.category}</small></td>
                         <td><span class="badge bg-info">Lv. ${q.srs_level}</span> ${timeStatusBadge}</td>
                         <td class="text-end">
-                            <button class="btn btn-sm btn-info recording-history-btn" data-word-id="${q.id}" data-word-q="${q.answer}"><i class="bi bi-clock-history"></i></button> 
                             <button class="btn btn-sm btn-danger delete-btn" data-id="${q.id}">ลบ</button>
                         </td>
                     </tr>`;
@@ -503,7 +533,7 @@
 
                 listContainer.innerHTML = tableHTML + `</tbody></table>`;
                 listContainer.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', async (e) => { if (confirm('ยืนยันการลบ?')) { await LocalStorageService.deleteQuestion(e.currentTarget.dataset.id); this.showAlert('ลบข้อมูลแล้ว', 'warning'); this.allUserQuestions = await LocalStorageService.getQuestions(); this.renderManageList(); } }));
-                listContainer.querySelectorAll('.recording-history-btn').forEach(b => b.addEventListener('click', (e) => this.showRecordingHistory(e.currentTarget.dataset.wordId, e.currentTarget.dataset.wordQ)));
+                // ลบ Event Listener สำหรับ showRecordingHistory ออกไป
             },
             
             showStartSessionModal() {
@@ -517,7 +547,7 @@
             },
 
             startSession(options) {
-                this.quizSession = { ...options, dueQuestions: [], lastRecordingBlob: null, currentState: null };
+                this.quizSession = { ...options, dueQuestions: [], currentState: null };
                 const now = new Date();
                 let filteredQuestions;
                 if (options.category === 'all') {
@@ -553,7 +583,6 @@
                 const nextQ = this.quizSession.dueQuestions.shift();
                 if (nextQ) {
                     this.quizSession.currentQuestion = nextQ;
-                    this.quizSession.lastRecordingBlob = null;
                     this.updateDebugInfo();
                     this.runCardSequence(nextQ, 'ask');
                 } else {
@@ -568,6 +597,8 @@
             runCardSequence(q, step, data = {}) {
                 const quizArea = document.getElementById('quiz-area');
                 if (!quizArea) return;
+                
+                // --- Step Ask: อ่านคำใบ้และรอคำตอบ ---
                 if (step === 'ask') {
                     quizArea.innerHTML = `<div class="my-4 p-3"><p class="fs-5 text-muted">เติมคำในช่องว่าง:</p><h2 class="display-6 my-3">${q.question}</h2><i class="bi bi-mic-fill fs-1"></i><p id="status-text" class="text-muted mt-2">กำลังพูดคำใบ้...</p></div>`;
                     SpeechService.speak(q.hint, 'th-TH', () => {
@@ -577,15 +608,17 @@
                             const mic = document.querySelector('#quiz-area .bi-mic-fill');
                             if(mic) mic.classList.add('mic-listening');
                             this.quizSession.currentState = 'AWAITING_ANSWER';
-                            RecordingService.startRecording();
                             SpeechService.listen('en-US');
                         });
                     });
-                } else if (step === 'feedback') {
+                } 
+                // --- Step Feedback: แสดงผลลัพธ์และรอ Level ---
+                else if (step === 'feedback') {
                     const fullSentence = q.question.replace('___', `<strong>${q.answer}</strong>`);
                     quizArea.innerHTML = `<div class="my-4 p-3"><h2 class="${data.isCorrect ? "text-success" : "text-danger"}">${data.isCorrect ? "ถูกต้อง!" : "ยังไม่ถูกต้อง"}</h2><p class="text-muted">คุณตอบว่า: <strong class="text-dark">"${data.transcript || '...'}"</strong></p><hr><p class="mt-3">ประโยคที่สมบูรณ์คือ:</p><h4 class="mt-3">${fullSentence}</h4></div>`;
 
                     if (data.isCorrect) {
+                        // FIX: เพิ่มการจัดการสถานะไมโครโฟนเพื่อรอ Level
                         quizArea.innerHTML += `<i class="bi bi-mic-fill fs-1 mt-4"></i><p id="status-text" class="text-muted mt-2">กำลังพูดเฉลย...</p>`;
                         SpeechService.speak(q.question.replace('___', q.answer), 'en-US', () => {
                             SpeechService.speak('คุณจำได้ดีแค่ไหน? กรุณาบอกเลเวล 1 ถึง 5', 'th-TH', () => {
@@ -594,6 +627,8 @@
                                 const mic = document.querySelector('#quiz-area .bi-mic-fill');
                                 if(mic) mic.classList.add('mic-listening');
                                 this.quizSession.currentState = 'AWAITING_LEVEL';
+                                
+                                // สั่งให้เริ่มฟังเพื่อรับ Level ทันที
                                 SpeechService.listen('th-TH');
                             });
                         });
@@ -613,44 +648,14 @@
             async handleSpeechInput(transcript) {
                 const q = this.quizSession.currentQuestion;
                 if (!q) return;
+                
                 if (this.quizSession.currentState === 'AWAITING_ANSWER') {
-                    const blob = await RecordingService.stopRecording();
-                    
+                    // ลบการหยุดอัดเสียงออกไป
                     const cleanString = (str) => str ? str.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"").trim() : "";
                     
-                    const cleanedAnswer = cleanString(q.answer);
-                    const cleanedTranscript = cleanString(transcript);
+                    // ใช้ Levenshtein Distance ที่เพิ่มเข้ามา
+                    const isCorrect = Levenshtein.isCloseEnough(cleanString(transcript), cleanString(q.answer));
                     
-                    let isCorrect = false;
-                    let distance = -1;
-
-                    if (cleanedAnswer === cleanedTranscript) {
-                        isCorrect = true; // ตอบถูก 100%
-                    } else {
-                        // คำนวณ Levenshtein Distance เพื่อกำหนดเกณฑ์การตอบผิด
-                        distance = calculateLevenshteinDistance(cleanedAnswer, cleanedTranscript);
-                        
-                        // เกณฑ์ความผิดพลาด (Tolerance)
-                        // ให้ผิดได้ 20% ของความยาวคำตอบ แต่ไม่ต่ำกว่า 1 และไม่เกิน 2
-                        const tolerance = Math.ceil(cleanedAnswer.length * 0.2); 
-                        const finalTolerance = Math.max(1, Math.min(2, tolerance)); 
-                        
-                        if (distance <= finalTolerance) {
-                            // ถือว่าถูก แม้จะมีข้อผิดพลาดเล็กน้อยตามเกณฑ์
-                            isCorrect = true; 
-                        } else if (cleanedTranscript.includes(cleanedAnswer) || cleanedAnswer.includes(cleanedTranscript)) {
-                            // กรณีผู้ใช้พูดประโยคยาว แต่มีคำตอบที่ถูกต้องอยู่ข้างใน (อนุโลม)
-                             isCorrect = true; 
-                        } else {
-                             isCorrect = false; 
-                        }
-                        
-                        this.updateDebugInfo(`D: ${distance}, T: ${finalTolerance}`);
-                    }
-
-                    if(isCorrect) {
-                        this.quizSession.lastRecordingBlob = blob;
-                    }
                     this.runCardSequence(q, 'feedback', { isCorrect, transcript });
                 } 
                 else if (this.quizSession.currentState === 'AWAITING_LEVEL') {
@@ -688,23 +693,7 @@
             handleSpeechEnd() {
                 SpeechService.isListening = false;
                 const micIcon = document.querySelector('#quiz-area .bi-mic-fill');
-                if (micIcon) mic.classList.remove('mic-listening');
-            },
-            
-            async showRecordingHistory(wordId, wordQ) {
-                const body = document.getElementById('history-modal-body');
-                document.getElementById('history-modal-title').textContent = `เปรียบเทียบเสียง: ${wordQ}`;
-                body.innerHTML = '<div class="text-center"><div class="spinner-border"></div></div>';
-                const modal = new bootstrap.Modal(document.getElementById('historyModal'));
-                modal.show();
-                const recordings = await IndexedDBService.getRecordingsForWord(wordId);
-                if (recordings.length === 0) { body.innerHTML = '<p class="text-center text-muted">ยังไม่มีเสียงที่อัดไว้</p>'; } 
-                else if (recordings.length === 1) { const url = URL.createObjectURL(recordings[0].audioBlob); body.innerHTML = `<h5 class="mb-3">ไฟล์เสียงเดียวที่มี</h5><p>อัดเมื่อ: ${recordings[0].timestamp.toLocaleString('th-TH')}</p><audio controls src="${url}" class="w-100"></audio>`; } 
-                else {
-                    const first = recordings[0], last = recordings[recordings.length - 1];
-                    const firstUrl = URL.createObjectURL(first.audioBlob), lastUrl = URL.createObjectURL(last.audioBlob);
-                    body.innerHTML = `<div class="row"><div class="col-md-6 mb-3 mb-md-0"><div class="card h-100"><div class="card-header"><h5><i class="bi bi-skip-start-circle"></i> การอัดครั้งแรก</h5></div><div class="card-body"><p><small>อัดเมื่อ: ${first.timestamp.toLocaleString('th-TH')}</small></p><audio controls class="w-100" src="${firstUrl}"></audio></div></div></div><div class="col-md-6"><div class="card h-100"><div class="card-header"><h5><i class="bi bi-check-circle"></i> การอัดล่าสุด</h5></div><div class="card-body"><p><small>อัดเมื่อ: ${last.timestamp.toLocaleString('th-TH')}</small></p><audio controls class="w-100" src="${lastUrl}"></audio></div></div></div></div>`;
-                }
+                if (micIcon) micIcon.classList.remove('mic-listening');
             },
             
             async setReviewByLevel(level) {
@@ -713,17 +702,15 @@
                 if (!q) return;
                 const quizArea = document.getElementById('quiz-area');
                 quizArea.innerHTML = `<div class="my-4 p-3"><p class="fs-5 text-muted">บันทึก Level ${level} แล้ว...</p><div class="spinner-border my-3" role="status"></div></div>`;
-                if (this.quizSession.lastRecordingBlob) {
-                    try { await IndexedDBService.addRecording(q.id, this.quizSession.lastRecordingBlob); } 
-                    catch (err) { this.showAlert('ไม่สามารถบันทึกเสียงได้', 'danger'); }
-                }
+                
+                // ลบการบันทึกเสียงออกไป
+                
                 const nextReviewDate = new Date();
                 const minutesToAdd = this.LEVEL_TO_MINUTES_MAP[level] || 1;
-                if (minutesToAdd < 1) {
-                    nextReviewDate.setSeconds(nextReviewDate.getSeconds() + minutesToAdd * 60);
-                } else {
-                    nextReviewDate.setMinutes(nextReviewDate.getMinutes() + minutesToAdd);
-                }
+                
+                // ใช้ setMinutes แทน setSeconds เพื่อความแม่นยำตามแผน SRS
+                nextReviewDate.setMinutes(nextReviewDate.getMinutes() + minutesToAdd);
+                
                 await LocalStorageService.updateQuestion(q.id, { srs_level: level, next_review_date: nextReviewDate });
                 const qIndex = this.allUserQuestions.findIndex(item => item.id === q.id);
                 if (qIndex > -1) this.allUserQuestions[qIndex] = {...this.allUserQuestions[qIndex], srs_level: level, next_review_date: nextReviewDate};
@@ -796,7 +783,7 @@
                 }
             },
 
-            updateDebugInfo(extraInfo = '') {
+            updateDebugInfo() {
                 const debugContainer = document.getElementById('debug-info');
                 if (!debugContainer) return;
 
@@ -827,7 +814,6 @@
                     <p class="mb-1"><strong>Current ID:</strong> ${currentIdShort}</p>
                     <p class="mb-1"><strong>Next ID:</strong> ${nextIdShort}</p>
                     <p class="mb-0"><strong>Queue:</strong> ${remainingQueueStr}</p>
-                    <p class="mb-0 text-danger">${extraInfo}</p>
                 `;
             },
 
