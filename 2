@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocab Master - Separate Level Column</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .container { max-width: 750px; }
+        .card { border: none; border-radius: 1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        .hidden { display: none !important; }
+        .mic-listening { color: #dc3545; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(220,53,69,0.4); } 70% { box-shadow: 0 0 0 10px rgba(220,53,69,0); } 100% { box-shadow: 0 0 0 0 rgba(220,53,69,0); } }
+        .table-responsive { max-height: 450px; overflow-y: auto; }
+        /* สไตล์เพิ่มเติมสำหรับตาราง */
+        .table th { background-color: #f8f9fa; position: sticky; top: 0; z-index: 1; }
+        .col-level { width: 80px; text-align: center; }
+        .col-action { width: 50px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container my-4">
+        <main id="app-root"></main>
+    </div>
+
+    <div class="modal fade" id="startSessionModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header border-0"><h5 class="modal-title fw-bold">เริ่มรอบทบทวน</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <label class="form-label">เลือกชุดข้อมูล</label>
+                    <select id="category-select" class="form-select mb-3 shadow-sm"></select>
+                </div>
+                <div class="modal-footer border-0"><button type="button" id="confirm-start-btn" class="btn btn-primary w-100 py-2">เริ่มต้นการเรียนรู้</button></div>
+            </div>
+        </div>
+    </div>
+
+    <template id="tmp-main">
+        <div class="card p-4 text-center">
+            <h1 class="display-6 fw-bold text-primary mb-1">Vocab Master</h1>
+            <p class="text-muted mb-4">ระบบทบทวนคำศัพท์อัจฉริยะ</p>
+            <div class="d-grid gap-3">
+                <button id="btn-start" class="btn btn-primary btn-lg py-3"><i class="bi bi-play-fill"></i> เริ่มรอบทบทวน</button>
+                <div class="row g-2">
+                    <div class="col-6"><button onclick="App.render('manage')" class="btn btn-outline-secondary w-100">จัดการคำศัพท์</button></div>
+                    <div class="col-6"><button onclick="App.render('dash')" class="btn btn-outline-info w-100">ดูสถิติ</button></div>
+                </div>
+                <button onclick="App.render('history')" class="btn btn-light text-success"><i class="bi bi-clock-history"></i> ประวัติการเรียน</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="tmp-test">
+        <div class="card overflow-hidden">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-3">
+                <span><i class="bi bi-volume-up-fill"></i> ระบบเสียงเปิดใช้งาน</span>
+                <span id="due-badge" class="badge bg-white text-primary">0</span>
+            </div>
+            <div class="progress rounded-0" style="height: 6px;"><div id="quiz-progress" class="progress-bar bg-info" style="width: 0%"></div></div>
+            <div class="card-body text-center py-5" id="quiz-area"></div>
+            <div class="card-footer bg-white border-0 text-center pb-4">
+                <div class="form-check form-switch d-inline-block mb-3">
+                    <input class="form-check-input" type="checkbox" id="type-toggle">
+                    <label class="form-check-label ms-1">โหมดพิมพ์ตอบ (มีเสียงโจทย์)</label>
+                </div>
+                <div id="type-input-area" class="input-group hidden shadow-sm">
+                    <input type="text" id="type-answer" class="form-control" placeholder="พิมพ์คำตอบที่นี่...">
+                    <button class="btn btn-success" id="btn-submit-type">ส่ง</button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="tmp-dash">
+        <button onclick="App.render('main')" class="btn btn-link text-decoration-none mb-2 px-0"><i class="bi bi-chevron-left"></i> กลับ</button>
+        <div class="card p-3">
+            <h5 class="fw-bold mb-3">สถิติความจำ</h5>
+            <div class="row text-center mb-4 g-2">
+                <div class="col-6"><div class="p-3 bg-light rounded"><h3 id="d-total" class="text-primary mb-0">0</h3><small>ทั้งหมด</small></div></div>
+                <div class="col-6"><div class="p-3 bg-light rounded"><h3 id="d-due" class="text-warning mb-0">0</h3><small>รอทวน</small></div></div>
+            </div>
+            <div style="height: 250px;"><canvas id="chart-lv"></canvas></div>
+        </div>
+    </template>
+
+    <template id="tmp-history">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <button onclick="App.render('main')" class="btn btn-link text-decoration-none px-0"><i class="bi bi-chevron-left"></i> กลับ</button>
+            <button onclick="App.exportExcel()" class="btn btn-success btn-sm"><i class="bi bi-file-earmark-spreadsheet"></i> Export Excel</button>
+        </div>
+        <div class="card p-3">
+            <h6 class="fw-bold mb-3">ประวัติการเรียนล่าสุด</h6>
+            <div id="history-container" class="table-responsive"></div>
+        </div>
+    </template>
+
+    <template id="tmp-manage">
+        <button onclick="App.render('main')" class="btn btn-link text-decoration-none mb-2 px-0"><i class="bi bi-chevron-left"></i> กลับ</button>
+        <div class="card p-3 mb-3">
+            <form id="add-form" class="row g-2">
+                <div class="col-12"><input type="text" class="form-control" placeholder="โจทย์อังกฤษ (เช่น I ___ water.)" required></div>
+                <div class="col-6"><input type="text" class="form-control" placeholder="คำตอบ" required></div>
+                <div class="col-6"><input type="text" class="form-control" placeholder="คำใบ้ไทย" required></div>
+                <div class="col-12"><input type="text" class="form-control" placeholder="หมวดหมู่" required></div>
+                <button type="submit" class="btn btn-primary w-100 mt-2">บันทึกข้อมูล</button>
+            </form>
+        </div>
+        <div class="card p-3">
+            <h6 class="fw-bold mb-3">รายชื่อคำศัพท์ทั้งหมด</h6>
+            <div id="manage-list" class="table-responsive">
+                </div>
+        </div>
+    </template>
+
+    <script>
+        const Sound = {
+            ctx: null,
+            play(freq) {
+                if(!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
+                o.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.5);
+                o.connect(g); g.connect(this.ctx.destination); o.start(); o.stop(this.ctx.currentTime + 0.5);
+            }
+        };
+
+        const Storage = {
+            getQs: () => JSON.parse(localStorage.getItem('srsAppQuestions') || '[]'),
+            getHis: () => JSON.parse(localStorage.getItem('srsAppHistory') || '[]'),
+            save: (qs, his) => {
+                localStorage.setItem('srsAppQuestions', JSON.stringify(qs));
+                localStorage.setItem('srsAppHistory', JSON.stringify(his.slice(0, 200)));
+            }
+        };
+
+        const Speech = {
+            speak(txt, lang, cb) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(txt); u.lang = lang; if(cb) u.onend = cb;
+                window.speechSynthesis.speak(u);
+            },
+            listen(cb) {
+                const SR = window.webkitSpeechRecognition || window.SpeechRecognition;
+                if(!SR) return;
+                const rec = new SR(); rec.lang = 'en-US';
+                rec.onresult = (e) => cb(e.results[0][0].transcript);
+                rec.onend = () => document.querySelector('.bi-mic-fill')?.classList.remove('mic-listening');
+                rec.start(); document.querySelector('.bi-mic-fill')?.classList.add('mic-listening');
+            }
+        };
+
+        const App = {
+            qs: [], his: [], session: [], cur: null, isTyping: false,
+
+            init() { this.qs = Storage.getQs(); this.his = Storage.getHis(); this.render('main'); },
+
+            render(p) {
+                window.speechSynthesis.cancel();
+                const root = document.getElementById('app-root');
+                root.innerHTML = document.getElementById(`tmp-${p}`).innerHTML;
+                if(p === 'main') document.getElementById('btn-start').onclick = () => this.openStartModal();
+                if(p === 'test') {
+                    document.getElementById('type-toggle').onchange = (e) => this.toggleType(e.target.checked);
+                    document.getElementById('btn-submit-type').onclick = () => this.handleType();
+                    document.getElementById('type-answer').onkeypress = (e) => { if(e.key === 'Enter') this.handleType(); };
+                }
+                if(p === 'dash') this.loadDash();
+                if(p === 'history') this.loadHis();
+                if(p === 'manage') this.loadMan();
+            },
+
+            openStartModal() {
+                const s = document.getElementById('category-select');
+                s.innerHTML = '<option value="all">ทั้งหมด</option><option value="due">ถึงรอบทวน</option>';
+                [...new Set(this.qs.map(q => q.category))].forEach(c => s.add(new Option(c, c)));
+                const m = new bootstrap.Modal(document.getElementById('startSessionModal'));
+                m.show();
+                document.getElementById('confirm-start-btn').onclick = () => { m.hide(); this.start(s.value); };
+            },
+
+            start(cat) {
+                let pool = cat === 'all' ? [...this.qs] : (cat === 'due' ? this.qs.filter(q => new Date(q.next_review_date || 0) <= new Date()) : this.qs.filter(q => q.category === cat));
+                if(pool.length === 0) return alert('ไม่มีคำศัพท์');
+                this.session = pool.sort(() => Math.random() - 0.5);
+                this.render('test'); this.next();
+            },
+
+            next() {
+                this.cur = this.session.shift();
+                if(!this.cur) return this.render('main');
+                document.getElementById('due-badge').textContent = `เหลือ ${this.session.length + 1}`;
+                const area = document.getElementById('quiz-area');
+                area.innerHTML = `<h2 class="mb-3">${this.cur.question}</h2><p class="text-primary fs-5">${this.cur.hint}</p><i class="bi bi-mic-fill fs-1 text-muted"></i>`;
+                
+                Speech.speak(this.cur.hint, 'th-TH', () => {
+                    Speech.speak(this.cur.question.replace('___', '...'), 'en-US', () => {
+                        if(!this.isTyping) Speech.listen((t) => this.check(t));
+                        else document.getElementById('type-answer').focus();
+                    });
+                });
+            },
+
+            toggleType(isT) { this.isTyping = isT; document.getElementById('type-input-area').classList.toggle('hidden', !isT); if(isT) document.getElementById('type-answer').focus(); },
+            handleType() { const i = document.getElementById('type-answer'); if(!i.value.trim()) return; this.check(i.value.trim()); i.value = ''; },
+            check(t) { this.feedback(t.toLowerCase().includes(this.cur.answer.toLowerCase()), t); },
+
+            feedback(ok, input) {
+                if(ok) Sound.play(880); else Sound.play(200);
+                const area = document.getElementById('quiz-area');
+                area.innerHTML = `<h1 class="${ok?'text-success':'text-danger'} fw-bold">${ok?'ถูกต้อง!':'ลองใหม่!'}</h1>
+                    <p class="fs-4">เฉลย: <strong class="text-dark">${this.cur.answer}</strong></p>
+                    <div class="mt-4 p-3 bg-light rounded">
+                        <p class="small text-muted mb-2">เลือกระดับความจำ (1-6)</p>
+                        ${[1,2,3,4,5,6].map(l => `<button onclick="App.setLv(${l}, ${ok}, '${input}')" class="btn btn-outline-primary m-1 px-3">L${l}</button>`).join('')}
+                    </div>`;
+                Speech.speak(this.cur.answer, 'en-US');
+            },
+
+            setLv(l, ok, input) {
+                const q = this.qs.find(x => x.id === this.cur.id);
+                q.srs_level = l;
+                const days = [0, 0.5, 1, 3, 7, 14, 30][l];
+                q.next_review_date = new Date(Date.now() + days * 86400000).toISOString();
+                this.his.unshift({ time: new Date().toLocaleString('th-TH'), q: this.cur.question, ans: this.cur.answer, input: input, res: ok ? 'Pass' : 'Fail', lv: l });
+                Storage.save(this.qs, this.his); this.next();
+            },
+
+            loadDash() {
+                document.getElementById('d-total').textContent = this.qs.length;
+                document.getElementById('d-due').textContent = this.qs.filter(q => new Date(q.next_review_date || 0) <= new Date()).length;
+                const lvs = [0,1,2,3,4,5,6].map(l => this.qs.filter(x => (x.srs_level||0) === l).length);
+                new Chart(document.getElementById('chart-lv'), { type: 'bar', data: { labels: ['L0','L1','L2','L3','L4','L5','L6'], datasets: [{ label: 'จำนวนคำ', data: lvs, backgroundColor: '#0d6efd' }] }, options: { maintainAspectRatio: false } });
+            },
+
+            loadHis() {
+                const c = document.getElementById('history-container');
+                c.innerHTML = `<table class="table table-sm table-hover"><thead><tr><th>เวลา</th><th>โจทย์</th><th>Level</th></tr></thead><tbody>${this.his.map(h => `<tr><td>${h.time}</td><td>${h.q}</td><td><span class="badge ${h.res==='Pass'?'bg-success':'bg-danger'}">${h.lv}</span></td></tr>`).join('')}</tbody></table>`;
+            },
+
+            loadMan() {
+                const container = document.getElementById('manage-list');
+                // สร้างตารางแบบแยกคอลัมน์
+                let html = `
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>คำศัพท์ / โจทย์</th>
+                                <th class="col-level">Level</th>
+                                <th class="col-action">ลบ</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+                
+                this.qs.forEach(q => {
+                    html += `
+                        <tr>
+                            <td>
+                                <div class="fw-bold text-dark">${q.answer}</div>
+                                <div class="small text-muted">${q.question}</div>
+                            </td>
+                            <td class="col-level">
+                                <span class="badge bg-secondary px-3">L${q.srs_level || 0}</span>
+                            </td>
+                            <td class="col-action">
+                                <button onclick="App.del(${q.id})" class="btn btn-link text-danger p-0">
+                                    <i class="bi bi-trash fs-5"></i>
+                                </button>
+                            </td>
+                        </tr>`;
+                });
+
+                html += `</tbody></table>`;
+                container.innerHTML = html;
+                
+                document.getElementById('add-form').onsubmit = (e) => {
+                    e.preventDefault(); const f = e.target;
+                    this.allAdd(f[0].value, f[1].value, f[2].value, f[3].value);
+                    f.reset();
+                };
+            },
+
+            allAdd(q, a, h, c) {
+                this.qs.push({ id: Date.now(), question: q, answer: a, hint: h, category: c, srs_level: 0, next_review_date: new Date().toISOString() });
+                Storage.save(this.qs, this.his); 
+                this.loadMan();
+            },
+
+            exportExcel() {
+                if(this.his.length === 0) return alert('ไม่มีประวัติ');
+                let csv = "\uFEFFเวลา,โจทย์,เฉลย,ที่ตอบ,ผลลัพธ์,Level\n";
+                this.his.forEach(h => { csv += `"${h.time}","${h.q}","${h.ans}","${h.input}","${h.res}","${h.lv}"\n`; });
+                const b = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = `history.csv`; a.click();
+            },
+
+            del(id) { if(confirm('ต้องการลบคำนี้ใช่หรือไม่?')) { this.qs = this.qs.filter(x => x.id !== id); Storage.save(this.qs, this.his); this.loadMan(); } }
+        };
+
+        App.init();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
