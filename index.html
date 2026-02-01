@@ -3,1204 +3,359 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>เว็บทบทวนคำศัพท์ (Fixed)</title>
+    <title>Vocab Master - Intelligent SRS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { background-color: #f0f2f5; }
-        .container { max-width: 700px; }
-        .card { border: none; border-radius: 0.75rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
-        #alert-container { position: fixed; top: 1rem; right: 1rem; z-index: 1055; min-width: 250px; }
+        body { background-color: #f8f9fa; font-family: 'ChulaCharasNew', sans-serif; }
+        .card { border: none; border-radius: 1.2rem; box-shadow: 0 8px 30px rgba(0,0,0,0.05); }
+        .stat-card { background: white; padding: 1.5rem; border-radius: 1rem; text-align: center; height: 100%; }
+        .mode-badge { padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 0.8rem; text-transform: uppercase; }
+        .bg-vocab { background-color: #e3f2fd; color: #0d6efd; border: 1px solid #0d6efd; }
+        .bg-sentence { background-color: #fff3e0; color: #ef6c00; border: 1px solid #ef6c00; }
         .hidden { display: none !important; }
-        .mic-listening { color: #dc3545; animation: pulse 1.5s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); } 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); } }
+        .progress { height: 8px; border-radius: 10px; }
+        
+        /* ปุ่มที่ระบบแนะนำ */
+        .btn-suggest { 
+            transform: scale(1.15); 
+            border-width: 3px !important; 
+            font-weight: bold !important;
+            box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+            z-index: 5;
+        }
+
+        @keyframes pulse-red {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+        }
+        .mic-active { animation: pulse-red 1.5s infinite; background-color: #dc3545 !important; color: white !important; border-color: #dc3545 !important; }
+        
+        .btn-speaker {
+            cursor: pointer;
+            transition: 0.2s;
+            color: #0d6efd;
+        }
+        .btn-speaker:hover { transform: scale(1.2); color: #004bb5; }
     </style>
 </head>
 <body>
-    <div class="container my-4">
-        <main id="app-root"></main>
+    <div class="container my-4" style="max-width: 800px;">
+        <div id="app-root"></div>
     </div>
 
-    <div id="alert-container"></div>
-    
-    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
-        <div id="due-toast" class="toast hide" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header">
-                <strong class="me-auto">🔔 แจ้งเตือนการทบทวน</strong>
-                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-            <div class="toast-body">
-                <p id="due-toast-message">มีคำศัพท์ถึงรอบทบทวนแล้ว!</p>
-                <button id="start-due-toast-btn" class="btn btn-primary btn-sm w-100">เริ่มทบทวนเลย</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal fade" id="startSessionModal" tabindex="-1" aria-labelledby="startSessionModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="startSessionModalLabel">เริ่มรอบทบทวน</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
+    <div class="modal fade" id="startModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header border-0"><h5 class="fw-bold">เริ่มต้นการเรียนรู้</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="category-select" class="form-label">เลือกชุดข้อมูล</label>
-                        <select id="category-select" class="form-select">
-                            <option value="all">ทบทวนทั้งหมด</option>
-                            <option value="due">เฉพาะที่ถึงรอบทวน</option>
-                        </select>
-                    </div>
+                    <label class="form-label small fw-bold">เลือกชุดข้อมูล</label>
+                    <select id="cat-select" class="form-select mb-3"></select>
+                    <div id="progress-info" class="p-3 bg-light rounded-3 small"></div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                    <button type="button" id="confirm-start-btn" class="btn btn-primary">เริ่มต้น</button>
+                <div class="modal-footer border-0">
+                    <button id="confirm-start" class="btn btn-primary w-100 py-2 fw-bold">เริ่มเรียนเดี๋ยวนี้</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="modal fade" id="editQuestionModal" tabindex="-1" aria-labelledby="editQuestionModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editQuestionModalLabel">แก้ไขคำศัพท์</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="edit-form">
-                        <input type="hidden" id="edit-id">
-                        <div class="mb-3">
-                            <label for="edit-question" class="form-label">ประโยค (อังกฤษ, เว้นด้วย ___)</label>
-                            <input type="text" id="edit-question" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="edit-answer-word" class="form-label">คำตอบ</label>
-                            <input type="text" id="edit-answer-word" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="edit-hint" class="form-label">ประโยคคำใบ้ (ไทย)</label>
-                            <input type="text" id="edit-hint" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="edit-category" class="form-label">หมวดหมู่</label>
-                            <input type="text" id="edit-category" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="edit-level" class="form-label">Level ปัจจุบัน</label>
-                            <input type="number" id="edit-level" class="form-control" min="0" max="6" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="edit-next-review" class="form-label">ทบทวนถัดไป (Date/Time)</label>
-                            <input type="datetime-local" id="edit-next-review" class="form-control" required>
-                        </div>
-                        <button type="submit" class="btn btn-success w-100">บันทึกการแก้ไข</button>
-                    </form>
-                </div>
-            </div>
+    <template id="tmp-main">
+        <div class="row g-3 mb-4">
+            <div class="col-4"><div class="stat-card"> <h3 class="text-primary fw-bold" id="st-total">0</h3><small class="text-muted">คำทั้งหมด</small> </div></div>
+            <div class="col-4"><div class="stat-card"> <h3 class="text-warning fw-bold" id="st-due">0</h3><small class="text-muted">รอทบทวน</small> </div></div>
+            <div class="col-4"><div class="stat-card"> <h3 class="text-danger fw-bold" id="st-streak">0</h3><small class="text-muted">Streak</small> </div></div>
         </div>
-    </div>
-
-    <template id="template-main-menu">
-        <div class="card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h5 class="mb-0" id="welcome-message">โปรแกรมทบทวนคำศัพท์</h5>
-                </div>
-                <div class="text-center p-2">
-                    <h1 class="text-primary mb-3">เว็บทบทวนคำศัพท์</h1>
-                    <p class="text-muted mb-4">เลือกเมนูเพื่อเริ่มต้น</p>
-                    <div class="d-grid gap-3">
-                        <button id="start-new-btn" class="btn btn-primary btn-lg"><i class="bi bi-stars"></i> เริ่มรอบทบทวน</button>
-                        <button id="manage-btn" class="btn btn-outline-secondary"><i class="bi bi-gear-fill"></i> จัดการข้อมูล / ตั้งค่า</button>
-                        <button id="dashboard-btn" class="btn btn-outline-info"><i class="bi bi-graph-up"></i> ดูสถิติ</button>
-                        <button id="history-btn" class="btn btn-outline-success"><i class="bi bi-clock-history"></i> ประวัติการทบทวน</button>
-                    </div>
-                </div>
+        <div class="card p-4 mb-4">
+            <h6 class="fw-bold mb-3"><i class="bi bi-graph-up"></i> กิจกรรมการเรียน</h6>
+            <div style="height: 150px;"><canvas id="chart-activity"></canvas></div>
+        </div>
+        <div class="card p-3 mb-4 bg-white border-start border-danger border-4">
+            <h6 class="fw-bold text-danger mb-2 small"><i class="bi bi-exclamation-octagon"></i> วิเคราะห์จุดอ่อน (ต้องเน้นย้ำ)</h6>
+            <div id="weak-list" class="small text-muted">ยังไม่มีข้อมูล</div>
+        </div>
+        <div class="d-grid gap-2">
+            <button onclick="App.openStart()" class="btn btn-primary btn-lg py-3 rounded-4 shadow-sm fw-bold">เริ่มรอบทบทวน</button>
+            <div class="row g-2">
+                <div class="col-6"><button onclick="App.render('manage')" class="btn btn-outline-secondary py-2 w-100">จัดการข้อมูล</button></div>
+                <div class="col-6"><button onclick="App.clearData()" class="btn btn-outline-danger py-2 w-100">ล้างข้อมูลใหม่</button></div>
             </div>
         </div>
     </template>
 
-    <template id="template-test">
-        <div class="card">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                <h3 class="fs-5 mb-0" id="mode-header"><i class="bi bi-robot"></i> Voice-Guided Mode</h3>
-                <span id="due-count-badge" class="badge bg-light text-dark"></span>
+    <template id="tmp-test">
+        <div class="card overflow-hidden shadow-lg border-0">
+            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center py-3">
+                <div id="mode-indicator" class="mode-badge">...</div>
+                <div class="fw-bold text-muted small">เหลืออีก <span id="q-left">0</span></div>
             </div>
-            <div class="card-header bg-light p-2">
-                <div class="progress" role="progressbar" style="height: 10px;">
-                    <div id="quiz-progress-bar" class="progress-bar bg-info" style="width: 0%"></div>
-                </div>
-                <small id="progress-text" class="text-muted mt-1 d-block text-end">0/0</small>
-            </div>
-            <div class="card-body text-center" id="quiz-area">
-                </div>
-            
-            <div class="card-footer bg-light p-3">
-                <div class="form-check form-switch mb-3 d-flex justify-content-end">
-                    <input class="form-check-input" type="checkbox" role="switch" id="typing-mode-toggle">
-                    <label class="form-check-label ms-2" for="typing-mode-toggle">Typing Mode</label>
-                </div>
+            <div class="progress rounded-0 bg-light"><div id="q-progress" class="progress-bar bg-primary" style="width: 0%"></div></div>
+            <div class="card-body text-center py-5">
+                <p id="q-hint" class="text-muted mb-2"></p>
+                <h2 id="q-text" class="display-6 fw-bold mb-4"></h2>
                 
-                <div id="typing-input-area" class="input-group hidden">
-                    <input type="text" id="typing-answer-input" class="form-control form-control-lg" placeholder="พิมพ์คำตอบที่นี่" aria-label="พิมพ์คำตอบ">
-                    <button class="btn btn-success btn-lg" type="button" id="submit-typing-btn">ส่ง</button>
+                <div id="input-area" class="px-4">
+                    <div class="input-group mb-3">
+                        <input type="text" id="ans-input" class="form-control form-control-lg text-center shadow-sm" placeholder="พิมพ์หรือกดไมค์..." autocomplete="off">
+                        <button id="mic-btn" onclick="App.handleMic()" class="btn btn-outline-primary px-4"><i class="bi bi-mic-fill"></i></button>
+                    </div>
+                    <button onclick="App.checkAns()" class="btn btn-dark btn-lg w-100 py-3 rounded-3 fw-bold">ส่งคำตอบ</button>
                 </div>
-            </div>
-            
-            <div id="debug-info" class="card-footer bg-light text-muted small" style="font-family: monospace;">
-                </div>
-        </div>
-    </template>
 
-    <template id="template-manage">
-        <button id="back-to-menu-btn" class="btn btn-secondary mb-3 w-100"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button>
-        
-        <div class="card mb-4">
-            <div class="card-header bg-warning text-dark">
-                <h5><i class="bi bi-megaphone-fill"></i> ตั้งค่าเสียงอ่าน (AI Voice)</h5>
-            </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <label for="th-voice-select" class="form-label">เสียงอ่านภาษาไทย (สำหรับคำใบ้)</label>
-                    <select id="th-voice-select" class="form-select"></select>
-                </div>
-                <div class="mb-3">
-                    <label for="en-voice-select" class="form-label">เสียงอ่านภาษาอังกฤษ (สำหรับประโยค/คำตอบ)</label>
-                    <select id="en-voice-select" class="form-select"></select>
-                </div>
-                <button id="test-voice-btn" class="btn btn-outline-secondary w-100">ทดสอบเสียง</button>
-            </div>
-        </div>
-
-        <div class="card mb-4">
-            <div class="card-header bg-info text-white">
-                <h5><i class="bi bi-plus-circle-fill"></i> เพิ่มข้อมูลใหม่</h5>
-            </div>
-            <div class="card-body">
-                <form id="add-form">
-                    <div class="mb-3">
-                        <label for="new-question" class="form-label">ประโยค (อังกฤษ, เว้นด้วย ___)</label>
-                        <input type="text" id="new-question" class="form-control" placeholder="เช่น I ___ water." required>
+                <div id="feedback-area" class="hidden">
+                    <h1 id="fb-title" class="fw-bold mb-1"></h1>
+                    <div id="speed-feedback" class="mb-3"></div>
+                    <div class="bg-light p-3 rounded-3 mb-4 position-relative">
+                        <small class="text-muted">เฉลยคือ:</small>
+                        <h2 class="text-dark fw-bold mb-0">
+                            <span id="fb-ans"></span>
+                            <i class="bi bi-volume-up-fill btn-speaker ms-2" onclick="App.speak(document.getElementById('fb-ans').textContent)"></i>
+                        </h2>
                     </div>
-                    <div class="mb-3">
-                        <label for="new-answer-word" class="form-label">คำตอบ</label>
-                        <input type="text" id="new-answer-word" class="form-control" placeholder="เช่น want" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="new-hint" class="form-label">ประโยคคำใบ้ (ไทย)</label>
-                        <input type="text" id="new-hint" class="form-control" placeholder="เช่น ฉันต้องการน้ำ" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="new-category" class="form-label">หมวดหมู่</label>
-                        <input type="text" id="new-category" class="form-control" placeholder="เช่น บทที่ 1" required>
-                    </div>
-                    <button type="submit" class="btn btn-success w-100">เพิ่มข้อมูล</button>
-                </form>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
-                <h5><i class="bi bi-card-list"></i> คลังข้อมูลทั้งหมด</h5>
-                <button id="reset-data-btn" class="btn btn-danger btn-sm"><i class="bi bi-trash3-fill"></i> รีเซ็ตข้อมูลทั้งหมด</button>
-            </div>
-            <div class="card-body">
-                <div id="questions-list" class="table-responsive">
-                    </div>
-            </div>
-            <div class="card-footer bg-light">
-                <h6 class="mb-3"><i class="bi bi-hdd-stack"></i> สำรอง/กู้คืนข้อมูล (JSON)</h6>
-                <div class="d-flex gap-2">
-                    <button id="export-data-btn" class="btn btn-outline-primary btn-sm"><i class="bi bi-download"></i> ส่งออกข้อมูล (JSON)</button>
-                    <label for="import-file-input" class="btn btn-outline-warning btn-sm mb-0">
-                        <i class="bi bi-upload"></i> นำเข้าข้อมูล (JSON)
-                    </label>
-                    <input type="file" id="import-file-input" accept=".json" class="hidden">
+                    <div id="srs-action-area"></div>
                 </div>
             </div>
         </div>
     </template>
 
-    <template id="template-dashboard">
-        <button id="back-to-menu-btn" class="btn btn-secondary mb-3 w-100"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button>
-        <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-                <h5><i class="bi bi-speedometer2"></i> แแดชบอร์ดสรุปผล</h5>
-            </div>
-            <div class="card-body">
-                <div class="row text-center mb-4">
-                    <div class="col">
-                        <h4 class="mb-0 text-primary" id="total-questions">0</h4>
-                        <small class="text-muted">ข้อมูลทั้งหมด</small>
-                    </div>
-                    <div class="col">
-                        <h4 class="mb-0 text-warning" id="due-for-review">0</h4>
-                        <small class="text-muted">ถึงรอบทวน</small>
-                    </div>
+    <template id="tmp-manage">
+        <button onclick="App.render('main')" class="btn btn-link text-decoration-none text-dark mb-2 px-0"><i class="bi bi-chevron-left"></i> กลับ</button>
+        <div class="card p-3 mb-3">
+            <h6 class="fw-bold mb-3">เพิ่มคำใหม่</h6>
+            <form id="add-form" class="row g-2 small">
+                <div class="col-8"><input type="text" class="form-control" placeholder="โจทย์" required></div>
+                <div class="col-4">
+                    <select class="form-select">
+                        <option value="word">คำศัพท์</option>
+                        <option value="sentence">ประโยค</option>
+                    </select>
                 </div>
-                <hr>
-                <h6 class="mb-3">การกระจายตัวของ Level</h6>
-                <div style="position: relative; height:300px; width:100%" class="mb-4">
-                    <canvas id="levelChart"></canvas>
-                </div>
-                <hr>
-                <h6 class="mb-3">สัดส่วนข้อมูลตามหมวดหมู่</h6>
-                <div style="position: relative; height:300px; width:100%">
-                    <canvas id="categoryChart"></canvas>
-                </div>
-            </div>
+                <div class="col-6"><input type="text" class="form-control" placeholder="เฉลย" required></div>
+                <div class="col-6"><input type="text" class="form-control" placeholder="คำใบ้" required></div>
+                <div class="col-12"><div class="input-group"><input type="text" class="form-control" placeholder="หมวดหมู่" required><button class="btn btn-primary">บันทึก</button></div></div>
+            </form>
         </div>
-    </template>
-
-    <template id="template-history">
-        <button id="back-to-menu-btn" class="btn btn-secondary mb-3 w-100"><i class="bi bi-arrow-left"></i> กลับไปเมนูหลัก</button>
-        <div class="card mb-4">
-            <div class="card-header bg-success text-white">
-                <h5><i class="bi bi-clock-history"></i> ประวัติการทบทวนล่าสุด</h5>
-            </div>
-            <div class="card-body">
-                <div id="history-stats" class="row text-center mb-4">
-                    <div class="col">
-                        <h4 class="mb-0 text-dark" id="total-sessions">0</h4>
-                        <small class="text-muted">การทบทวนทั้งหมด</small>
-                    </div>
-                    <div class="col">
-                        <h4 class="mb-0 text-success" id="total-correct">0</h4>
-                        <small class="text-muted">ถูกต้อง</small>
-                    </div>
-                    <div class="col">
-                        <h4 class="mb-0 text-danger" id="total-incorrect">0</h4>
-                        <small class="text-muted">ผิดพลาด/ข้าม</small>
-                    </div>
-                </div>
-                <hr>
-                <div id="history-list-container" class="table-responsive" style="max-height: 500px; overflow-y: auto;">
-                    </div>
-            </div>
-        </div>
+        <div id="man-list" class="list-group shadow-sm small"></div>
     </template>
 
     <script>
-        /**
-         * ---------------------------------------------------------------------
-         * ระบบ Spaced Repetition System (SRS) & Web Speech API
-         * ---------------------------------------------------------------------
-         */
-
-        const INITIAL_QUESTIONS = [
-            { question: "___ do you want?", answer: "What", hint: "คุณต้องการอะไร", category: "Lesson 1" },
-            { question: "I ___ water.", answer: "want", hint: "ฉันต้องการน้ำ", category: "Lesson 1" },
-            { question: "I want ___.", answer: "water", hint: "ฉันต้องการน้ำ", category: "Lesson 1" },
-            { question: "I want ___ water.", answer: "cold", hint: "ฉันต้องการน้ำเย็น", category: "Lesson 1" },
-            { question: "I want cold ___.", answer: "water", hint: "ฉันต้องการน้ำเย็น", category: "Lesson 1" }
-        ];
-
-        // ระบบประมวลผลความคล้ายคลึงของคำตอบ
-        const Levenshtein = {
-            distance: (s1, s2) => {
-                s1 = s1.toLowerCase();
-                s2 = s2.toLowerCase();
-                const costs = [];
-                for (let i = 0; i <= s1.length; i++) {
-                    let lastValue = i;
-                    for (let j = 0; j <= s2.length; j++) {
-                        if (i === 0)
-                            costs[j] = j;
-                        else {
-                            if (j > 0) {
-                                let newValue = costs[j - 1];
-                                if (s1.charAt(i - 1) !== s2.charAt(j - 1))
-                                    newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
-                                costs[j - 1] = lastValue;
-                                lastValue = newValue;
-                            }
-                        }
-                    }
-                    if (i > 0) costs[s2.length] = lastValue;
-                }
-                return costs[s2.length];
-            },
-            isCloseEnough: (s1, s2) => {
-                const maxLen = Math.max(s1.length, s2.length);
-                const maxError = Math.floor(maxLen * 0.25) + 1;
-                return Levenshtein.distance(s1, s2) <= maxError;
-            }
-        };
-
-        const LocalStorageService = {
-            getQuestions: async () => {
-                const data = localStorage.getItem('srsAppQuestions');
-                if (!data) return [];
-                return JSON.parse(data).map(q => ({
-                    ...q,
-                    next_review_date: new Date(q.next_review_date),
-                    created_at: q.created_at ? new Date(q.created_at) : new Date()
-                }));
-            },
-            saveQuestions: async (questions) => {
-                const dataToSave = questions.map(q => ({
-                    ...q,
-                    next_review_date: q.next_review_date.toISOString(),
-                    created_at: (q.created_at || new Date()).toISOString()
-                }));
-                localStorage.setItem('srsAppQuestions', JSON.stringify(dataToSave));
-            },
-            addQuestion: async (data) => {
-                const questions = await LocalStorageService.getQuestions();
-                const newQuestion = {
-                    ...data,
-                    id: `local_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-                    srs_level: data.srs_level || 0,
-                    next_review_date: data.next_review_date || new Date(),
-                    created_at: new Date()
-                };
-                questions.push(newQuestion);
-                await LocalStorageService.saveQuestions(questions);
-            },
-            deleteQuestion: async (wordId) => {
-                let questions = await LocalStorageService.getQuestions();
-                questions = questions.filter(q => q.id !== wordId);
-                await LocalStorageService.saveQuestions(questions);
-            },
-            updateQuestion: async (wordId, data) => {
-                let questions = await LocalStorageService.getQuestions();
-                const idx = questions.findIndex(q => q.id === wordId);
-                if (idx > -1) {
-                    questions[idx] = { ...questions[idx], ...data };
-                    await LocalStorageService.saveQuestions(questions);
-                }
-            },
-            getHistory: async () => {
-                const data = localStorage.getItem('srsAppHistory');
-                return data ? JSON.parse(data) : [];
-            },
-            logSessionResult: async (questionId, isCorrect, srsLevel, transcript, mode) => {
-                const history = await LocalStorageService.getHistory();
-                const log = {
-                    timestamp: new Date().toISOString(),
-                    question_id: questionId,
-                    is_correct: isCorrect,
-                    srs_level: srsLevel,
-                    transcript: transcript,
-                    mode: mode
-                };
-                history.unshift(log);
-                localStorage.setItem('srsAppHistory', JSON.stringify(history.slice(0, 1000))); // เก็บ 1000 รายการล่าสุด
-            }
-        };
-
-        const SpeechService = {
-            recognition: null,
-            isListening: false,
-            init: () => {
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                if (!SpeechRecognition) {
-                    console.error("Speech Recognition not supported");
-                    return;
-                }
-                SpeechService.recognition = new SpeechRecognition();
-                SpeechService.recognition.continuous = false;
-                SpeechService.recognition.interimResults = false;
-
-                SpeechService.recognition.onresult = (event) => {
-                    const transcript = event.results[0][0].transcript.trim();
-                    App.handleSpeechInput(transcript);
-                };
-
-                SpeechService.recognition.onerror = (event) => {
-                    if (event.error === 'no-speech' && SpeechService.isListening) {
-                        SpeechService.recognition.stop();
-                        setTimeout(() => SpeechService.listen(SpeechService.recognition.lang), 100);
-                    }
-                };
-
-                SpeechService.recognition.onend = () => {
-                    SpeechService.isListening = false;
-                    App.handleSpeechEnd();
-                };
-            },
-            speak: (text, lang, onEndCallback = null) => {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = lang;
-                
-                // ความเร็วในการอ่าน
-                if (lang.startsWith('th')) utterance.rate = 0.9;
-                else utterance.rate = 1.0;
-
-                // เลือกเสียงที่บันทึกไว้
-                const savedVoiceURI = localStorage.getItem(lang.startsWith('th') ? 'thVoiceURI' : 'enVoiceURI');
-                if (savedVoiceURI) {
-                    const voices = window.speechSynthesis.getVoices();
-                    const selectedVoice = voices.find(v => v.voiceURI === savedVoiceURI);
-                    if (selectedVoice) utterance.voice = selectedVoice;
-                }
-
-                if (onEndCallback) utterance.onend = onEndCallback;
-                window.speechSynthesis.speak(utterance);
-            },
-            listen: (lang) => {
-                if (!SpeechService.recognition || App.isTypingMode) return;
-                SpeechService.recognition.lang = lang;
-                try {
-                    SpeechService.recognition.start();
-                    SpeechService.isListening = true;
-                } catch (e) {
-                    console.log("Recognition already started");
-                }
-            }
-        };
-
         const App = {
-            allUserQuestions: [],
-            quizSession: {
-                queue: [],
-                currentIndex: 0,
-                currentQuestion: null,
-                lastTranscript: "",
-                step: 'intro' 
-            },
-            isTypingMode: false,
-            
-            // การตั้งค่าระยะเวลา SRS (นาที/ชั่วโมง/วัน)
-            LEVEL_TO_INTERVAL_MAP: {
-                0: { unit: 'minutes', value: 0 },   // New
-                1: { unit: 'minutes', value: 2 },   // Level 1: ทวนซ้ำทันที
-                2: { unit: 'hours', value: 1 },     // Level 2: 1 ชม.
-                3: { unit: 'days', value: 1 },      // Level 3: 1 วัน
-                4: { unit: 'days', value: 4 },      // Level 4: 4 วัน
-                5: { unit: 'days', value: 10 },     // Level 5: 10 วัน
-                6: { unit: 'days', value: 30 }      // Level 6: 30 วัน (Mastered)
+            qs: [], his: [], cur: null, session: [],
+            startTime: null,
+
+            init() {
+                this.qs = JSON.parse(localStorage.getItem('vMaster_qs') || '[]');
+                this.his = JSON.parse(localStorage.getItem('vMaster_his') || '[]');
+                if(this.qs.length < 12) this.seedData();
+                this.render('main');
             },
 
-            async init() {
-                // ตรวจสอบและสร้างข้อมูลเริ่มต้น
-                if (!localStorage.getItem('srsAppQuestions')) {
-                    const initialData = INITIAL_QUESTIONS.map(q => ({
-                        ...q,
-                        id: `local_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-                        srs_level: 0,
-                        next_review_date: new Date(),
-                        created_at: new Date()
-                    }));
-                    await LocalStorageService.saveQuestions(initialData);
+            seedData() {
+                const data = [
+                    { q: 'ความพยายาม', a: 'effort', h: 'E _ _ _ _ T', c: 'General', t: 'word' },
+                    { q: 'It takes a lot of ___.', a: 'effort', h: 'มันต้องใช้ความพยายามอย่างมาก', c: 'General', t: 'sentence' },
+                    { q: 'สะดวกสบาย', a: 'convenient', h: 'c _ _ _ _ _ _ _ _ t', c: 'Lifestyle', t: 'word' },
+                    { q: 'ความท้าทาย', a: 'challenge', h: 'c _ _ _ _ _ _ _ e', c: 'Mindset', t: 'word' },
+                    { q: 'โอกาส', a: 'opportunity', h: 'o _ _ _ _ _ _ _ _ _ y', c: 'Career', t: 'word' },
+                    { q: 'จำเป็น', a: 'necessary', h: 'n _ _ _ _ _ _ _ y', c: 'General', t: 'word' },
+                    { q: 'แนะนำ', a: 'recommend', h: 'r _ _ _ _ _ _ _ d', c: 'Social', t: 'word' },
+                    { q: 'This is a great ___ for you.', a: 'opportunity', h: 'นี่เป็นโอกาสที่ยอดเยี่ยมสำหรับคุณ', c: 'Career', t: 'sentence' },
+                    { q: 'Is it ___ for you to meet now?', a: 'convenient', h: 'ตอนนี้คุณสะดวกที่จะพบกันไหม?', c: 'Lifestyle', t: 'sentence' },
+                    { q: 'I highly ___ this restaurant.', a: 'recommend', h: 'ฉันแนะนำร้านอาหารนี้อย่างยิ่ง', c: 'Social', t: 'sentence' },
+                    { q: 'It is ___ to follow the rules.', a: 'necessary', h: 'มันจำเป็นที่จะต้องปฏิบัติตามกฎ', c: 'General', t: 'sentence' },
+                    { q: 'Learning English is a ___.', a: 'challenge', h: 'การเรียนภาษาอังกฤษคือความท้าทาย', c: 'Mindset', t: 'sentence' }
+                ];
+                this.qs = data.map((d, i) => ({
+                    id: Date.now() + i, type: d.t, question: d.q, answer: d.a, hint: d.h, category: d.c,
+                    srs_level: 0, next_review: new Date().toISOString(), wrong_count: 0
+                }));
+                this.save();
+            },
+
+            save() { 
+                localStorage.setItem('vMaster_qs', JSON.stringify(this.qs)); 
+                localStorage.setItem('vMaster_his', JSON.stringify(this.his)); 
+            },
+
+            clearData() {
+                if(confirm('ล้างข้อมูลทั้งหมดเพื่อเริ่มใหม่ใช่ไหม?')) {
+                    localStorage.clear();
+                    location.reload();
                 }
-
-                this.allUserQuestions = await LocalStorageService.getQuestions();
-                SpeechService.init();
-                this.render('main-menu');
-
-                // แจ้งเตือนเมื่อมีคำศัพท์ถึงรอบทวน
-                this.startDueItemsCheck();
             },
 
-            render(page) {
-                // หยุดการทำงานของเสียงและการจำเสียงเมื่อเปลี่ยนหน้า
-                this.isTypingMode = false;
-                window.speechSynthesis.cancel();
-                if (SpeechService.recognition) {
-                    try { SpeechService.recognition.stop(); } catch(e){}
-                }
-
+            render(p) {
                 const root = document.getElementById('app-root');
-                root.innerHTML = '';
-                const template = document.getElementById(`template-${page}`);
-                if (template) {
-                    const content = template.content.cloneNode(true);
-                    root.appendChild(content);
-                    this.bindPageEvents(page);
-                }
+                root.innerHTML = document.getElementById(`tmp-${p}`).innerHTML;
+                if(p === 'main') this.loadMain();
+                if(p === 'manage') this.loadMan();
             },
 
-            bindPageEvents(page) {
-                if (page === 'main-menu') {
-                    document.getElementById('start-new-btn').onclick = () => {
-                        const modal = new bootstrap.Modal(document.getElementById('startSessionModal'));
-                        modal.show();
-                    };
-                    document.getElementById('confirm-start-btn').onclick = () => {
-                        const type = document.getElementById('category-select').value;
-                        bootstrap.Modal.getInstance(document.getElementById('startSessionModal')).hide();
-                        this.startQuizSession(type);
-                    };
-                    document.getElementById('manage-btn').onclick = () => this.render('manage');
-                    document.getElementById('dashboard-btn').onclick = () => this.render('dashboard');
-                    document.getElementById('history-btn').onclick = () => this.render('history');
+            loadMain() {
+                const due = this.qs.filter(q => new Date(q.next_review) <= new Date()).length;
+                document.getElementById('st-total').textContent = this.qs.length;
+                document.getElementById('st-due').textContent = due;
+                document.getElementById('st-streak').textContent = this.his.length > 0 ? "1" : "0";
 
-                } else if (page === 'manage') {
-                    document.getElementById('back-to-menu-btn').onclick = () => this.render('main-menu');
-                    this.renderManageList();
-                    this.setupManageVoiceControls();
-                    
-                    document.getElementById('add-form').onsubmit = async (e) => {
-                        e.preventDefault();
-                        const q = document.getElementById('new-question').value;
-                        const a = document.getElementById('new-answer-word').value;
-                        const h = document.getElementById('new-hint').value;
-                        const c = document.getElementById('new-category').value;
-                        await LocalStorageService.addQuestion({ question: q, answer: a, hint: h, category: c });
-                        this.allUserQuestions = await LocalStorageService.getQuestions();
-                        this.renderManageList();
-                        e.target.reset();
-                        this.showAlert('เพิ่มคำศัพท์เรียบร้อยแล้ว');
-                    };
+                const weakOnes = [...this.qs].sort((a,b) => b.wrong_count - a.wrong_count).filter(q => q.wrong_count > 0).slice(0, 3);
+                document.getElementById('weak-list').innerHTML = weakOnes.length > 0 
+                    ? weakOnes.map(q => `<div>• ${q.answer} (ผิด ${q.wrong_count} ครั้ง)</div>`).join('')
+                    : "ยอดเยี่ยม! ยังไม่มีจุดอ่อน";
 
-                    document.getElementById('reset-data-btn').onclick = async () => {
-                        if (confirm('คุณแน่ใจหรือไม่ว่าต้องการรีเซ็ตข้อมูลทั้งหมด?')) {
-                            localStorage.clear();
-                            location.reload();
-                        }
-                    };
-
-                    document.getElementById('export-data-btn').onclick = () => {
-                        const dataStr = JSON.stringify(this.allUserQuestions);
-                        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-                        const exportFileDefaultName = 'vocabulary_backup.json';
-                        const linkElement = document.createElement('a');
-                        linkElement.setAttribute('href', dataUri);
-                        linkElement.setAttribute('download', exportFileDefaultName);
-                        linkElement.click();
-                    };
-
-                    document.getElementById('import-file-input').onchange = (e) => {
-                        const file = e.target.files[0];
-                        if (!file) return;
-                        const reader = new FileReader();
-                        reader.onload = async (evt) => {
-                            try {
-                                const imported = JSON.parse(evt.target.result);
-                                if (confirm(`คุณต้องการนำเข้าข้อมูล ${imported.length} รายการ และเขียนทับข้อมูลเดิมหรือไม่?`)) {
-                                    await LocalStorageService.saveQuestions(imported);
-                                    this.allUserQuestions = await LocalStorageService.getQuestions();
-                                    this.renderManageList();
-                                    this.showAlert('นำเข้าข้อมูลสำเร็จ');
-                                }
-                            } catch (err) {
-                                alert('ไฟล์ JSON ไม่ถูกต้อง');
-                            }
-                        };
-                        reader.readAsText(file);
-                    };
-
-                    document.getElementById('edit-form').onsubmit = async (e) => {
-                        e.preventDefault();
-                        const id = document.getElementById('edit-id').value;
-                        const data = {
-                            question: document.getElementById('edit-question').value,
-                            answer: document.getElementById('edit-answer-word').value,
-                            hint: document.getElementById('edit-hint').value,
-                            category: document.getElementById('edit-category').value,
-                            srs_level: parseInt(document.getElementById('edit-level').value),
-                            next_review_date: new Date(document.getElementById('edit-next-review').value)
-                        };
-                        await LocalStorageService.updateQuestion(id, data);
-                        this.allUserQuestions = await LocalStorageService.getQuestions();
-                        bootstrap.Modal.getInstance(document.getElementById('editQuestionModal')).hide();
-                        this.renderManageList();
-                        this.showAlert('แก้ไขข้อมูลสำเร็จ');
-                    };
-
-                } else if (page === 'test') {
-                    document.getElementById('typing-mode-toggle').onchange = (e) => {
-                        this.toggleTypingMode(e.target.checked);
-                    };
-                    document.getElementById('submit-typing-btn').onclick = () => {
-                        const input = document.getElementById('typing-answer-input');
-                        this.handleTypingInput(input.value);
-                        input.value = '';
-                    };
-                } else if (page === 'dashboard') {
-                    document.getElementById('back-to-menu-btn').onclick = () => this.render('main-menu');
-                    this.renderDashboard();
-                } else if (page === 'history') {
-                    document.getElementById('back-to-menu-btn').onclick = () => this.render('main-menu');
-                    this.renderHistory();
-                }
-            },
-
-            // ระบบทบทวน (Quiz Logic)
-            async startQuizSession(mode) {
-                let queue = [];
-                const now = new Date();
-                
-                if (mode === 'all') {
-                    queue = [...this.allUserQuestions];
-                } else if (mode === 'due') {
-                    queue = this.allUserQuestions.filter(q => q.next_review_date <= now);
-                }
-
-                if (queue.length === 0) {
-                    this.showAlert('ไม่มีคำศัพท์ที่ต้องทบทวนในขณะนี้!', 'info');
-                    return;
-                }
-
-                // สุ่มลำดับ
-                queue.sort(() => Math.random() - 0.5);
-
-                this.quizSession = {
-                    queue: queue,
-                    currentIndex: 0,
-                    currentQuestion: queue[0],
-                    lastTranscript: "",
-                    step: 'intro'
-                };
-
-                this.render('test');
-                this.updateProgressBar();
-                this.updateDueBadge();
-                this.runCardSequence(this.quizSession.currentQuestion, 'intro');
-            },
-
-            updateProgressBar() {
-                const total = this.quizSession.queue.length;
-                const current = this.quizSession.currentIndex + 1;
-                const percent = (current / total) * 100;
-                const bar = document.getElementById('quiz-progress-bar');
-                const text = document.getElementById('progress-text');
-                if (bar) bar.style.width = `${percent}%`;
-                if (text) text.textContent = `${current}/${total}`;
-            },
-
-            updateDueBadge() {
-                const badge = document.getElementById('due-count-badge');
-                if (badge) {
-                    const remaining = this.quizSession.queue.length - this.quizSession.currentIndex;
-                    badge.textContent = `${remaining} card${remaining > 1 ? 's' : ''} left`;
-                }
-                this.updateDebugQueue();
-            },
-
-            toggleTypingMode(enabled) {
-                this.isTypingMode = enabled;
-                const inputArea = document.getElementById('typing-input-area');
-                const header = document.getElementById('mode-header');
-                
-                if (enabled) {
-                    inputArea.classList.remove('hidden');
-                    header.innerHTML = `<i class="bi bi-keyboard"></i> Typing Mode`;
-                    if (SpeechService.recognition) SpeechService.recognition.stop();
-                    document.getElementById('typing-answer-input').focus();
-                } else {
-                    inputArea.classList.add('hidden');
-                    header.innerHTML = `<i class="bi bi-robot"></i> Voice-Guided Mode`;
-                    // ถ้ากำลังอยู่ในขั้นตอนที่ต้องการรับเสียง (answer-listening) ให้เริ่มรับเสียงใหม่
-                    if (this.quizSession.step === 'answer-listening') {
-                        SpeechService.listen('en-US');
-                    }
-                }
-            },
-
-            runCardSequence(question, step, data = {}) {
-                this.quizSession.step = step;
-                const container = document.getElementById('quiz-area');
-                if (!container) return;
-
-                if (step === 'intro') {
-                    container.innerHTML = `
-                        <div class="mb-4">
-                            <h2 class="display-6 mb-3">คำแปล: <span class="text-primary">${question.hint}</span></h2>
-                            <p class="text-muted fs-4">${question.question.replace('___', ' ( ... ) ')}</p>
-                        </div>
-                        <div class="mt-5">
-                            <span class="badge bg-secondary p-2">Level: ${question.srs_level}</span>
-                            <span class="badge bg-light text-dark p-2">Category: ${question.category}</span>
-                        </div>
-                    `;
-                    
-                    SpeechService.speak(`แปลว่า: ${question.hint}`, 'th-TH', () => {
-                        setTimeout(() => this.runCardSequence(question, 'question-reading'), 500);
-                    });
-
-                } else if (step === 'question-reading') {
-                    const displayQuestion = question.question.replace('___', `<span class="border-bottom border-primary text-primary px-3">_____</span>`);
-                    container.innerHTML = `
-                        <div class="mb-4">
-                            <h2 class="display-6 mb-3 text-muted">${question.hint}</h2>
-                            <p class="fs-1 fw-bold">${displayQuestion}</p>
-                        </div>
-                        <div class="mt-4">
-                            <div class="spinner-grow text-primary" role="status"></div>
-                            <p class="mt-2 text-primary">ฟังประโยค...</p>
-                        </div>
-                    `;
-                    
-                    const speakText = question.question.replace('___', '... blank ...');
-                    SpeechService.speak(speakText, 'en-US', () => {
-                        setTimeout(() => this.runCardSequence(question, 'answer-listening'), 500);
-                    });
-
-                } else if (step === 'answer-listening') {
-                    container.innerHTML = `
-                        <div class="mb-4">
-                            <h2 class="display-6 mb-3 text-muted">${question.hint}</h2>
-                            <p class="fs-2">${question.question.replace('___', ' ( ? ) ')}</p>
-                        </div>
-                        <div id="status-ui" class="mt-4">
-                            ${this.isTypingMode ? 
-                                `<div class="p-3 bg-light rounded border border-success">
-                                    <h4 class="text-success"><i class="bi bi-keyboard"></i> พร้อมรับคำตอบ...</h4>
-                                    <p class="mb-0">กรุณาพิมพ์คำตอบในช่องข้างล่าง</p>
-                                </div>` :
-                                `<div class="p-3 bg-light rounded border border-danger mic-listening">
-                                    <h4 class="text-danger"><i class="bi bi-mic-fill"></i> กำลังฟังคำตอบ...</h4>
-                                    <p class="mb-0">กรุณาพูดคำศัพท์ในช่องว่าง</p>
-                                </div>`
-                            }
-                        </div>
-                    `;
-                    
-                    if (!this.isTypingMode) {
-                        SpeechService.listen('en-US');
-                    } else {
-                        document.getElementById('typing-answer-input').focus();
-                    }
-
-                } else if (step === 'correct') {
-                    const finalSentence = question.question.replace('___', question.answer);
-                    container.innerHTML = `
-                        <div class="mb-4">
-                            <i class="bi bi-check-circle-fill text-success display-1"></i>
-                            <h2 class="text-success mt-3 fw-bold">ถูกต้อง!</h2>
-                            <p class="fs-3 mt-4">${finalSentence}</p>
-                            <p class="text-muted mt-2">คำตอบคือ: <strong>${question.answer}</strong></p>
-                        </div>
-                    `;
-                    
-                    SpeechService.speak(`Excellent! The answer is ${question.answer}.`, 'en-US', () => {
-                        SpeechService.speak(finalSentence, 'en-US');
-                    });
-
-                    // คำนวณ Level ใหม่ (ขึ้น 1 ระดับ)
-                    const nextLevel = Math.min(question.srs_level + 1, 6);
-                    this.setReviewByLevel(nextLevel);
-
-                } else if (step === 'incorrect') {
-                    const finalSentence = question.question.replace('___', question.answer);
-                    container.innerHTML = `
-                        <div class="mb-4">
-                            <i class="bi bi-x-circle-fill text-danger display-1"></i>
-                            <h2 class="text-danger mt-3 fw-bold">ไม่ถูกต้อง</h2>
-                            <p class="fs-4 mt-2">ที่คุณพูด: <span class="text-muted">"${data.transcript || '...'}"</span></p>
-                            <p class="fs-3 mt-4">คำตอบที่ถูกคือ: <span class="text-primary fw-bold">${question.answer}</span></p>
-                            <p class="text-muted fs-5 mt-2">${finalSentence}</p>
-                        </div>
-                    `;
-                    
-                    SpeechService.speak(`Not quite. The correct answer is ${question.answer}.`, 'en-US', () => {
-                        SpeechService.speak(finalSentence, 'en-US');
-                    });
-
-                    // คำนวณ Level ใหม่ (กลับไป Level 1 หรือลดลง)
-                    const nextLevel = 1; 
-                    this.setReviewByLevel(nextLevel);
-                }
-            },
-
-            handleSpeechInput(transcript) {
-                if (this.quizSession.step !== 'answer-listening') return;
-                
-                this.quizSession.lastTranscript = transcript;
-                const question = this.quizSession.currentQuestion;
-                const isCorrect = Levenshtein.isCloseEnough(transcript, question.answer);
-                
-                if (isCorrect) {
-                    this.runCardSequence(question, 'correct');
-                } else {
-                    this.runCardSequence(question, 'incorrect', { transcript: transcript });
-                }
-            },
-
-            handleTypingInput(value) {
-                if (this.quizSession.step !== 'answer-listening') return;
-                
-                this.quizSession.lastTranscript = value;
-                const question = this.quizSession.currentQuestion;
-                const isCorrect = Levenshtein.isCloseEnough(value.trim(), question.answer);
-                
-                if (isCorrect) {
-                    this.runCardSequence(question, 'correct');
-                } else {
-                    this.runCardSequence(question, 'incorrect', { transcript: value });
-                }
-            },
-
-            handleSpeechEnd() {
-                // ถ้ายังอยู่ในขั้นรับเสียงแต่ไม่มีเสียงพูดเข้ามา ให้ฟังต่อ
-                if (this.quizSession.step === 'answer-listening' && !this.isTypingMode) {
-                    setTimeout(() => {
-                        if (this.quizSession.step === 'answer-listening' && !SpeechService.isListening) {
-                            SpeechService.listen('en-US');
-                        }
-                    }, 500);
-                }
-            },
-
-            async setReviewByLevel(level) {
-                const q = this.quizSession.currentQuestion;
-                if (!q) return;
-
-                const isCorrect = level > 1;
-                await LocalStorageService.logSessionResult(
-                    q.id, 
-                    isCorrect, 
-                    level, 
-                    this.quizSession.lastTranscript, 
-                    this.isTypingMode ? 'typing' : 'voice'
-                );
-
-                const nextDate = new Date();
-                const interval = this.LEVEL_TO_INTERVAL_MAP[level];
-                
-                if (interval.unit === 'minutes') {
-                    nextDate.setMinutes(nextDate.getMinutes() + interval.value);
-                } else if (interval.unit === 'hours') {
-                    nextDate.setHours(nextDate.getHours() + interval.value);
-                } else {
-                    nextDate.setDate(nextDate.getDate() + interval.value);
-                }
-
-                await LocalStorageService.updateQuestion(q.id, {
-                    srs_level: level,
-                    next_review_date: nextDate
+                new Chart(document.getElementById('chart-activity'), {
+                    type: 'line',
+                    data: { labels: ['จ.','อ.','พ.','พฤ.','ศ.','ส.','อา.'], datasets: [{ label: 'ทบทวน', data: [0,0,0,0,0,0, due], borderColor: '#0d6efd', fill: true, backgroundColor: 'rgba(13, 110, 253, 0.05)', tension: 0.4 }] },
+                    options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false } } } }
                 });
-
-                // อัปเดตข้อมูลใน UI Memory
-                this.allUserQuestions = await LocalStorageService.getQuestions();
-
-                // หน่วงเวลาเล็กน้อยก่อนไปข้อถัดไป
-                setTimeout(() => this.nextCard(), 4000);
             },
 
-            nextCard() {
-                this.quizSession.currentIndex++;
-                if (this.quizSession.currentIndex < this.quizSession.queue.length) {
-                    this.quizSession.currentQuestion = this.quizSession.queue[this.quizSession.currentIndex];
-                    this.updateProgressBar();
-                    this.updateDueBadge();
-                    this.runCardSequence(this.quizSession.currentQuestion, 'intro');
-                } else {
-                    this.finishSession();
-                }
-            },
-
-            finishSession() {
-                const container = document.getElementById('quiz-area');
-                container.innerHTML = `
-                    <div class="py-5">
-                        <i class="bi bi-trophy-fill text-warning display-1"></i>
-                        <h2 class="mt-4 fw-bold">ทบทวนสำเร็จ!</h2>
-                        <p class="text-muted">คุณทบทวนคำศัพท์ในรอบนี้ครบหมดแล้ว</p>
-                        <button onclick="App.render('main-menu')" class="btn btn-primary btn-lg mt-3">
-                            <i class="bi bi-house"></i> กลับสู่เมนูหลัก
-                        </button>
-                    </div>
-                `;
-                SpeechService.speak("Congratulations! You have completed your review session.", "en-US");
-            },
-
-            // ส่วนจัดการคลังข้อมูล
-            renderManageList() {
-                const listContainer = document.getElementById('questions-list');
-                if (!listContainer) return;
-
-                if (this.allUserQuestions.length === 0) {
-                    listContainer.innerHTML = '<p class="text-center text-muted py-3">ไม่มีข้อมูลในคลัง</p>';
-                    return;
-                }
-
-                let html = `
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>คำใบ้ (ไทย)</th>
-                                <th>ประโยค / คำตอบ</th>
-                                <th>Level</th>
-                                <th class="text-end">การจัดการ</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-
-                this.allUserQuestions.forEach(q => {
-                    const nextStr = q.next_review_date.toLocaleString('th-TH');
-                    html += `
-                        <tr>
-                            <td>
-                                <strong>${q.hint}</strong><br>
-                                <small class="text-muted">${q.category}</small>
-                            </td>
-                            <td>
-                                <span class="text-muted">${q.question.replace('___', '___')}</span><br>
-                                <span class="text-success fw-bold">${q.answer}</span>
-                            </td>
-                            <td>
-                                <span class="badge bg-primary">Lv.${q.srs_level}</span><br>
-                                <small class="text-muted" style="font-size: 0.7rem;">ทวน: ${nextStr}</small>
-                            </td>
-                            <td class="text-end">
-                                <button class="btn btn-sm btn-outline-warning" onclick="App.showEditModal('${q.id}')">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="App.deleteWord('${q.id}')">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    `;
-                });
-
-                html += '</tbody></table>';
-                listContainer.innerHTML = html;
-            },
-
-            showEditModal(id) {
-                const q = this.allUserQuestions.find(item => item.id === id);
-                if (!q) return;
-
-                document.getElementById('edit-id').value = q.id;
-                document.getElementById('edit-question').value = q.question;
-                document.getElementById('edit-answer-word').value = q.answer;
-                document.getElementById('edit-hint').value = q.hint;
-                document.getElementById('edit-category').value = q.category;
-                document.getElementById('edit-level').value = q.srs_level;
-                
-                // แปลง Date เป็น format ของ datetime-local (YYYY-MM-DDThh:mm)
-                const date = q.next_review_date;
-                const tzOffset = date.getTimezoneOffset() * 60000;
-                const localISODate = (new Date(date - tzOffset)).toISOString().slice(0, 16);
-                document.getElementById('edit-next-review').value = localISODate;
-
-                const modal = new bootstrap.Modal(document.getElementById('editQuestionModal'));
+            openStart() {
+                const modal = new bootstrap.Modal(document.getElementById('startModal'));
+                const mastered = this.qs.filter(q => q.type === 'word' && q.srs_level >= 3).length;
+                const sel = document.getElementById('cat-select');
+                sel.innerHTML = '<option value="strict">เส้นทางเรียนรู้ (ตามระดับ)</option>';
+                [...new Set(this.qs.map(q => q.category))].forEach(c => sel.add(new Option(c, c)));
+                document.getElementById('progress-info').innerHTML = `ระดับความแม่นยำ (L3+): <b>${mastered}/3</b> คำ<br>${mastered >= 3 ? '<span class="text-success">✅ ปลดล็อกประโยคแล้ว</span>' : '<span class="text-danger">❌ ฝึกศัพท์ให้คล่องก่อนเริ่มประโยค</span>'}`;
+                document.getElementById('confirm-start').onclick = () => { modal.hide(); this.startTest(sel.value); };
                 modal.show();
             },
 
-            async deleteWord(id) {
-                if (confirm('ยืนยันที่จะลบข้อมูลคำศัพท์นี้?')) {
-                    await LocalStorageService.deleteQuestion(id);
-                    this.allUserQuestions = await LocalStorageService.getQuestions();
-                    this.renderManageList();
-                    this.showAlert('ลบข้อมูลเรียบร้อยแล้ว', 'danger');
-                }
+            startTest(cat) {
+                const masteredCount = this.qs.filter(q => q.type === 'word' && q.srs_level >= 3).length;
+                this.session = this.qs.filter(q => {
+                    if (masteredCount < 3 && q.type === 'sentence') return false; 
+                    return cat === 'strict' ? true : q.category === cat;
+                });
+                if(this.session.length === 0) return alert('ไม่มีคำที่ต้องทบทวน');
+                this.totalInSession = this.session.length;
+                this.render('test');
+                this.nextQ();
             },
 
-            setupManageVoiceControls() {
-                const thSelect = document.getElementById('th-voice-select');
-                const enSelect = document.getElementById('en-voice-select');
-                const testBtn = document.getElementById('test-voice-btn');
-
-                const populateVoices = () => {
-                    const voices = window.speechSynthesis.getVoices();
-                    if (voices.length === 0) return;
-
-                    thSelect.innerHTML = '';
-                    enSelect.innerHTML = '';
-
-                    const currentTh = localStorage.getItem('thVoiceURI');
-                    const currentEn = localStorage.getItem('enVoiceURI');
-
-                    voices.forEach(voice => {
-                        const option = document.createElement('option');
-                        option.value = voice.voiceURI;
-                        option.textContent = `${voice.name} (${voice.lang})`;
-                        
-                        if (voice.lang.includes('TH')) {
-                            const clone = option.cloneNode(true);
-                            if (voice.voiceURI === currentTh) clone.selected = true;
-                            thSelect.appendChild(clone);
-                        }
-                        if (voice.lang.includes('EN') || voice.lang.includes('en')) {
-                            const clone = option.cloneNode(true);
-                            if (voice.voiceURI === currentEn) clone.selected = true;
-                            enSelect.appendChild(clone);
-                        }
-                    });
-                };
-
-                populateVoices();
-                if (window.speechSynthesis.onvoiceschanged !== undefined) {
-                    window.speechSynthesis.onvoiceschanged = populateVoices;
-                }
-
-                thSelect.onchange = (e) => localStorage.setItem('thVoiceURI', e.target.value);
-                enSelect.onchange = (e) => localStorage.setItem('enVoiceURI', e.target.value);
-
-                testBtn.onclick = () => {
-                    SpeechService.speak("ทดสอบเสียงภาษาไทย", "th-TH", () => {
-                        setTimeout(() => {
-                            SpeechService.speak("Testing English voice.", "en-US");
-                        }, 500);
-                    });
-                };
-            },
-
-            // ส่วนของสถิติและประวัติ
-            renderDashboard() {
-                const questions = this.allUserQuestions;
-                const now = new Date();
-                const dueCount = questions.filter(q => q.next_review_date <= now).length;
-
-                document.getElementById('total-questions').textContent = questions.length;
-                document.getElementById('due-for-review').textContent = dueCount;
-
-                // Level Chart
-                const levelData = [0, 1, 2, 3, 4, 5, 6].map(lv => 
-                    questions.filter(q => q.srs_level === lv).length
-                );
-
-                new Chart(document.getElementById('levelChart'), {
-                    type: 'bar',
-                    data: {
-                        labels: ['New', 'Lv.1', 'Lv.2', 'Lv.3', 'Lv.4', 'Lv.5', 'Lv.6'],
-                        datasets: [{
-                            label: 'จำนวนคำศัพท์',
-                            data: levelData,
-                            backgroundColor: '#3b82f6'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-                    }
-                });
-
-                // Category Chart
-                const categories = {};
-                questions.forEach(q => {
-                    categories[q.category] = (categories[q.category] || 0) + 1;
-                });
-
-                new Chart(document.getElementById('categoryChart'), {
-                    type: 'doughnut',
-                    data: {
-                        labels: Object.keys(categories),
-                        datasets: [{
-                            data: Object.values(categories),
-                            backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false
-                    }
-                });
-            },
-
-            async renderHistory() {
-                const history = await LocalStorageService.getHistory();
-                const container = document.getElementById('history-list-container');
+            nextQ() {
+                this.cur = this.session.shift();
+                if(!this.cur) return alert('จบทบทวนแล้ว!'), this.render('main');
+                document.getElementById('ans-input').value = '';
+                document.getElementById('input-area').classList.remove('hidden');
+                document.getElementById('feedback-area').classList.add('hidden');
+                const mi = document.getElementById('mode-indicator');
+                mi.textContent = this.cur.type === 'word' ? 'คำศัพท์' : 'ประโยค';
+                mi.className = `mode-badge ${this.cur.type === 'word' ? 'bg-vocab' : 'bg-sentence'}`;
+                document.getElementById('q-left').textContent = this.session.length + 1;
+                document.getElementById('q-progress').style.width = `${((this.totalInSession - this.session.length) / this.totalInSession) * 100}%`;
+                document.getElementById('q-hint').textContent = this.cur.hint;
+                document.getElementById('q-text').textContent = this.cur.question;
                 
-                if (history.length === 0) {
-                    container.innerHTML = '<p class="text-center text-muted py-4">ยังไม่มีประวัติการทบทวน</p>';
-                    return;
-                }
+                this.startTime = Date.now();
+                setTimeout(() => {
+                    const inp = document.getElementById('ans-input');
+                    if(inp) inp.focus();
+                }, 400);
+            },
 
-                // สถิติเบื้องต้น
-                const correctCount = history.filter(h => h.is_correct).length;
-                document.getElementById('total-sessions').textContent = history.length;
-                document.getElementById('total-correct').textContent = correctCount;
-                document.getElementById('total-incorrect').textContent = history.length - correctCount;
+            handleMic() {
+                const Rec = window.webkitSpeechRecognition || window.SpeechRecognition;
+                if (!Rec) return alert("เบราว์เซอร์ไม่รองรับคำสั่งเสียง");
+                const rec = new Rec(); rec.lang = 'en-US';
+                const btn = document.getElementById('mic-btn');
+                rec.onstart = () => btn.classList.add('mic-active');
+                rec.onresult = (e) => {
+                    document.getElementById('ans-input').value = e.results[0][0].transcript.replace(/\.$/g, '');
+                    setTimeout(() => this.checkAns(), 600);
+                };
+                rec.onend = () => btn.classList.remove('mic-active');
+                rec.start();
+            },
 
-                let html = `
-                    <table class="table table-sm">
-                        <thead class="table-light">
-                            <tr>
-                                <th>เวลา</th>
-                                <th>คำศัพท์</th>
-                                <th>โหมด</th>
-                                <th>ที่ตอบไป</th>
-                                <th>ผลลัพธ์</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
+            speak(text) {
+                const speech = new SpeechSynthesisUtterance(text);
+                speech.lang = 'en-US';
+                window.speechSynthesis.speak(speech);
+            },
 
-                history.forEach(log => {
-                    const q = this.allUserQuestions.find(item => item.id === log.question_id);
-                    const timeStr = new Date(log.timestamp).toLocaleString('th-TH', { 
-                        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-                    });
+            checkAns() {
+                const duration = (Date.now() - this.startTime) / 1000;
+                const input = document.getElementById('ans-input').value.trim().toLowerCase();
+                const isCorrect = input === this.cur.answer.toLowerCase();
+                
+                document.getElementById('input-area').classList.add('hidden');
+                document.getElementById('feedback-area').classList.remove('hidden');
+                
+                const title = document.getElementById('fb-title');
+                const speedBox = document.getElementById('speed-feedback');
+                const actionArea = document.getElementById('srs-action-area');
+                document.getElementById('fb-ans').textContent = this.cur.answer;
+
+                if(isCorrect) {
+                    title.textContent = "ถูกต้อง! 🎉";
+                    title.className = "fw-bold text-success";
                     
-                    html += `
-                        <tr>
-                            <td><small>${timeStr}</small></td>
-                            <td><strong>${q ? q.answer : 'N/A'}</strong></td>
-                            <td><small>${log.mode === 'typing' ? 'พิมพ์' : 'พูด'}</small></td>
-                            <td><small class="text-muted">"${log.transcript || '-'}"</small></td>
-                            <td>
-                                <span class="badge ${log.is_correct ? 'bg-success' : 'bg-danger'}">
-                                    ${log.is_correct ? 'ผ่าน' : 'ไม่ผ่าน'}
-                                </span>
-                            </td>
-                        </tr>
-                    `;
-                });
+                    let speedHTML = "";
+                    let recLv = 0;
 
-                html += '</tbody></table>';
-                container.innerHTML = html;
-            },
-
-            // อื่นๆ
-            startDueItemsCheck() {
-                const check = () => {
-                    const now = new Date();
-                    const dueItems = this.allUserQuestions.filter(q => q.next_review_date <= now);
-                    if (dueItems.length > 0) {
-                        const toastEl = document.getElementById('due-toast');
-                        const toast = bootstrap.Toast.getOrCreateInstance(toastEl);
-                        document.getElementById('due-toast-message').textContent = `มีคำศัพท์ ${dueItems.length} คำ ถึงเวลาทบทวนแล้ว!`;
-                        document.getElementById('start-due-toast-btn').onclick = () => {
-                            toast.hide();
-                            this.startQuizSession('due');
-                        };
-                        toast.show();
+                    if(duration <= 3.5) {
+                        speedHTML = "<span class='badge bg-success'><i class='bi bi-lightning-charge-fill'></i> ตอบเร็วมาก!</span>";
+                        recLv = 6;
+                    } else if(duration <= 7.5) {
+                        speedHTML = "<span class='badge bg-primary'><i class='bi bi-hand-thumbs-up-fill'></i> ความเร็วดี</span>";
+                        recLv = 4;
+                    } else {
+                        speedHTML = "<span class='badge bg-warning text-dark'><i class='bi bi-hourglass-split'></i> ใช้เวลานึกนิดหน่อย</span>";
+                        recLv = 2;
                     }
-                };
-                
-                check();
-                setInterval(check, 60000); // เช็คทุก 1 นาที
-            },
+                    speedBox.innerHTML = speedHTML;
 
-            updateDebugQueue() {
-                const debugContainer = document.getElementById('debug-info');
-                if (!debugContainer || !this.quizSession.queue) return;
-
-                const queue = this.quizSession.queue.slice(this.quizSession.currentIndex + 1);
-                const currentIdShort = this.quizSession.currentQuestion.id.toString().slice(-4);
-                let nextIdShort = '-';
-                let remainingQueueStr = '[]';
-
-                if (queue && queue.length > 0) {
-                    nextIdShort = queue[0].id.toString().slice(-4); 
-                    if (queue.length > 1) {
-                        remainingQueueStr = `[${queue.slice(1, 10).map(q => q.id.toString().slice(-4)).join(', ')}]`;
+                    let btns = `<p class='small text-muted mb-2'>ความมั่นใจ (แนะนำ L${recLv}):</p><div class='d-flex justify-content-center flex-wrap align-items-center' style='min-height: 80px;'>`;
+                    for(let i=1; i<=6; i++) {
+                        const isRec = i === recLv;
+                        btns += `<button onclick="App.setLv(${i})" class="btn ${isRec ? 'btn-primary btn-suggest' : 'btn-outline-primary'} m-2">L${i}</button>`;
                     }
+                    btns += '</div>';
+                    actionArea.innerHTML = btns;
+                } else {
+                    title.textContent = "ยังไม่ถูกนะ! ❌";
+                    title.className = "fw-bold mb-3 text-danger";
+                    speedBox.innerHTML = "";
+                    this.cur.wrong_count++;
+                    actionArea.innerHTML = `<button onclick="App.setLv(1)" class="btn btn-danger w-100 py-3 fw-bold">พยายามใหม่ (ลดเป็น L1)</button>`;
                 }
 
-                debugContainer.innerHTML = `
-                    <p class="mb-1"><strong>Current ID:</strong> ${currentIdShort}</p>
-                    <p class="mb-1"><strong>Next ID:</strong> ${nextIdShort}</p>
-                    <p class="mb-0"><strong>Queue:</strong> ${remainingQueueStr}</p>
-                `;
+                this.speak(this.cur.answer);
             },
 
-            showAlert(msg, type = 'success') {
-                const c = document.getElementById('alert-container');
-                const el = document.createElement('div');
-                el.className = `alert alert-${type} alert-dismissible fade show`;
-                el.innerHTML = `${msg}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
-                c.appendChild(el);
-                setTimeout(() => bootstrap.Alert.getOrCreateInstance(el).close(), 3000);
+            setLv(lv) {
+                const target = this.qs.find(q => q.id === this.cur.id);
+                target.srs_level = lv;
+                const days = [0, 0, 0.1, 1, 3, 7, 30][lv] || 1;
+                target.next_review = new Date(Date.now() + days * 86400000).toISOString();
+                this.his.unshift({ date: new Date().toISOString(), ans: this.cur.answer, lv: lv });
+                this.save();
+                this.nextQ();
+            },
+
+            loadMan() {
+                const list = document.getElementById('man-list');
+                list.innerHTML = this.qs.map(q => `
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div><div class="fw-bold">${q.answer}</div><div class="small text-muted">${q.question}</div></div>
+                        <span class="badge ${q.type==='word'?'bg-vocab':'bg-sentence'}">L${q.srs_level}</span>
+                    </div>
+                `).join('');
+                document.getElementById('add-form').onsubmit = (e) => {
+                    e.preventDefault();
+                    const f = e.target;
+                    this.qs.push({
+                        id: Date.now(), question: f[0].value, type: f[1].value, answer: f[2].value, hint: f[3].value, category: f[4].value,
+                        srs_level: 0, next_review: new Date().toISOString(), wrong_count: 0
+                    });
+                    this.save(); this.loadMan(); f.reset();
+                };
             }
         };
 
-        // Start App
-        document.addEventListener('DOMContentLoaded', () => {
-            App.init();
-        });
+        App.init();
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
